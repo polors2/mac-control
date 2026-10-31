@@ -4,6 +4,105 @@
   "description": "Canonical integration contract; select an individual definition through #/$defs/NAME.",
   "$ref": "#/$defs/BridgeResponse",
   "$defs": {
+    "FileProgress": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "copying",
+            "verifying"
+          ]
+        },
+        "bytes_done": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "bytes_total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "progress_accuracy": {
+          "enum": [
+            "exact",
+            "estimated"
+          ]
+        },
+        "source": {
+          "enum": [
+            "finder_open_files",
+            "managed_copy"
+          ]
+        },
+        "observed_offset_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "association": {
+          "enum": [
+            "destination_label",
+            "single_visible_operation"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "status",
+        "bytes_done",
+        "bytes_total",
+        "percent",
+        "progress_accuracy",
+        "source"
+      ],
+      "description": "Current file nested below an overall copy. Finder file percentages are estimated write positions, not completion signals. Managed file counters are exact.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "finder_open_files"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "bytes_done": {
+                "type": "null"
+              },
+              "progress_accuracy": {
+                "const": "estimated"
+              }
+            },
+            "required": [
+              "observed_offset_bytes"
+            ]
+          }
+        }
+      ]
+    },
     "FinderItem": {
       "type": "object",
       "properties": {
@@ -30,6 +129,19 @@
         },
         "progress_accuracy": {
           "const": "reported_by_finder_ui"
+        },
+        "files": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/FileProgress"
+          }
+        },
+        "file_details_available": {
+          "type": "boolean"
+        },
+        "file_details_reason": {
+          "type": "string"
         }
       },
       "required": [
@@ -170,6 +282,12 @@
             "string",
             "null"
           ]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FileProgress"
+          }
         }
       },
       "required": [

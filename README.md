@@ -165,6 +165,9 @@ The notifier does not push into Mac Control. Existing controls continue to work
 when the notifier is unavailable, and its administrator token never reaches the
 browser. Finder progress requires the separate observer app's Accessibility
 permission; no duplicate Mac progress window is opened.
+Each active copy shows Finder's overall progress with current-file rows below it.
+Finder file percentages are estimates from observed write positions; unavailable
+details remain unknown. Completed jobs and synthetic tests are hidden from this view.
 
 Read the [integration guide](docs/integrations/mac-control.md) for configuration,
 request direction, polling, authentication, exposed endpoints and limitations.

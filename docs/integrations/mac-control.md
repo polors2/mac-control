@@ -1,6 +1,6 @@
 # How Mac Control reads notifier activity
 
-Contract version: **1.0.0**. Documented against the implementation on **2026-10-31**.
+Contract version: **1.1.0**. Documented against the implementation on **2026-11-01**.
 This document is distributed with both repositories. Paths in the contract bundle
 are relative to the repository containing that bundle; they contain no local
 credentials, user-specific paths or actual tailnet hostnames.
@@ -36,6 +36,7 @@ sequenceDiagram
 | Component | Responsibility |
 | --- | --- |
 | DevBox Finder Observer.app | Reads only Finder windows exposing progress indicators through public macOS Accessibility APIs. Samples every 3 seconds. No network listener or window of its own. |
+| finder-files helper | Reads cached Finder file-descriptor metadata in a bounded child process when an overall operation is visible. Provides estimated current-file details without opening or reading file contents. |
 | Notifier service | Launches the approved app through LaunchServices, consumes a private FIFO and keeps current activity in memory/SQLite. Hosts REST, WebSocket and notification providers. |
 | Mac Control server | Adds a session-protected read-only route and calls the notifier over loopback using a server-held credential. |
 | Mac Control browser script | Requests its own server's activity route while visible and authenticated. It never receives the notifier administrator credential. |
@@ -151,8 +152,10 @@ The notifier's Finder reader samples every 3 seconds regardless of browser viewe
 Overall latency includes both sampling and polling. Cards are keyed by activity ID;
 existing text and progress elements are updated only as values change. There is
 no full-page reload, per-sample list rebuild, repeated toast or extra Mac progress
-panel. Up to eight cards include Finder windows, active managed jobs and two recent
-terminal managed jobs. Generic filesystem hints are not displayed in Mac Control.
+panel. Each card shows Finder’s overall progress first, with current-file rows underneath.
+Up to eight active copy cards are shown. Terminal managed jobs and synthetic/demo
+jobs are excluded from both dashboards’ normal views; they do not linger as old
+verification copies. Generic filesystem hints are not displayed in Mac Control.
 
 These sources have different guarantees:
 
@@ -160,9 +163,20 @@ These sources have different guarantees:
   Localized byte counts and ETA remain in the displayed `text`; they are not parsed
   into numeric transfer counters. IDs are ephemeral window indexes, not durable job
   IDs. A disappeared window means `no_longer_visible`, not verified completion.
+- **Current Finder files:** a bounded helper reads cached file-descriptor metadata
+  only while Finder exposes an operation. A writable destination must match a
+  distinct read-only source of the same basename. Rows expose basenames, never full
+  paths. Estimated percentages use a nonzero, in-range write position divided by
+  the matching source size. Preallocated destination size is never treated as
+  transferred bytes. Unknown progress remains null. Multiple operations are matched
+  by destination label; ambiguous matches are omitted. Only currently open files
+  are visible, so small files between samples and unopened queued files may be
+  absent. Closing a file does not prove completion. Failure to obtain per-file
+  metadata leaves the overall Finder bar working and shows an unavailable message.
 - **Managed copies:** byte counters belong to the controlled worker. Unknown/zero
   total gives `percent=null`; successful completion follows verification and
-  exclusive finalization. Apply monotonically increasing `sequence` values.
+  exclusive finalization. The `files` array carries the current file’s exact byte
+  counters and copying/verifying phase. Apply monotonically increasing `sequence` values.
 - **Filesystem hints:** optional, disabled by default, and estimated. File size is
   not transferred bytes; bytes_done, bytes_total, percent and ETA stay null.
 
@@ -254,5 +268,7 @@ the implementation; reviewed payload schemas and semantic annotations live in th
 exporter. The checked-in OpenAPI includes documentation annotations that the live
 framework `/v1/openapi.json` may omit. Runtime authentication is enforced by the
 actual route dependencies, independently of documentation. Contract tests validate
-real API/bridge responses, examples, references and generation drift. No live
-credentials or user-specific runtime settings are used to generate artifacts.
+real API/bridge responses, examples, references and generation drift. Optional DOM
+regression tests run with `cd tests/web && npm install --ignore-scripts && npm test`
+on a Node development machine; Node is not required by either production service.
+No live credentials or user-specific runtime settings are used to generate artifacts.

@@ -24,7 +24,24 @@
           "percent": 50,
           "source": "finder_accessibility",
           "status": "visible_in_finder",
-          "progress_accuracy": "reported_by_finder_ui"
+          "progress_accuracy": "reported_by_finder_ui",
+          "files": [
+            {
+              "id": "file-1",
+              "display_name": "clip.mov",
+              "status": "copying",
+              "bytes_done": null,
+              "bytes_total": 1000000000,
+              "observed_offset_bytes": 250000000,
+              "percent": 25,
+              "progress_accuracy": "estimated",
+              "source": "finder_open_files",
+              "association": "single_visible_operation",
+              "note": "Observed write position; completion is unverified."
+            }
+          ],
+          "file_details_available": true,
+          "file_details_reason": "current_open_files"
         }
       ],
       "transition": "updated"

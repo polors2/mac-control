@@ -1,7 +1,7 @@
 {
   "document_type": "devbox_mac_control_integration",
-  "contract_version": "1.0.0",
-  "as_of": "2026-10-31",
+  "contract_version": "1.1.0",
+  "as_of": "2026-11-01",
   "canonical_artifacts": {
     "human_document": "docs/integrations/mac-control.md",
     "payload_schema": "packages/contracts/mac-control-activity.schema.json",
@@ -24,6 +24,15 @@
       "receiver": "finder_observer_app",
       "transport": "LaunchServices launch with private local FIFO output",
       "helper_output_has_network_listener": false
+    },
+    {
+      "initiator": "notifier_service",
+      "receiver": "finder_files_helper",
+      "transport": "bounded_child_process_stdout",
+      "only_when_finder_operation_visible": true,
+      "timeout_seconds": 1.5,
+      "source": "cached_Finder_process_file_descriptor_metadata",
+      "opens_or_reads_file_contents": false
     },
     {
       "initiator": "mac_control_browser",
@@ -249,15 +258,31 @@
     "credential_source": "configured state_dir/admin-token",
     "commit_runtime_files": false
   },
+  "display": {
+    "layout": "overall_Finder_progress_with_current_file_rows_underneath",
+    "show_terminal_managed_jobs": false,
+    "show_synthetic_jobs": false,
+    "rendering": "stable_keyed_cards_and_file_rows"
+  },
   "semantics": {
     "finder": {
       "accuracy": "reported_by_finder_ui",
       "localized_bytes_and_eta": "display text only, not parsed numeric counters",
       "identifier_scope": "ephemeral_window_index",
-      "window_disappearance_proves_completion": false
+      "window_disappearance_proves_completion": false,
+      "current_files": {
+        "source": "finder_open_files",
+        "accuracy": "estimated",
+        "bytes_done": null,
+        "percent": "observed write offset / matching source size; null if unavailable or out of range",
+        "preallocated_destination_size_used_as_progress": false,
+        "does_not_list_unopened_queued_files": true,
+        "closed_file_proves_completion": false
+      }
     },
     "managed_copy": {
       "accuracy": "exact",
+      "current_file_counters": "files array",
       "completion_requires": [
         "worker_verification",
         "successful_exclusive_finalization"
