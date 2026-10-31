@@ -156,14 +156,35 @@ The dashboard uses **HTTP for a trusted intranet**. Do not expose or port-forwar
 python3 server.py --host 127.0.0.1
 ```
 
+## Finder copy progress through DevBox Notifier
+
+The activity card can consume the separate DevBox Notifier service. The browser
+polls this server's session-protected `GET /api/file-activity`; this server then
+pulls `GET /v1/snapshot` from loopback port 8876 with a locally held credential.
+The notifier does not push into Mac Control. Existing controls continue to work
+when the notifier is unavailable, and its administrator token never reaches the
+browser. Finder progress requires the separate observer app's Accessibility
+permission; no duplicate Mac progress window is opened.
+
+Read the [integration guide](docs/integrations/mac-control.md) for configuration,
+request direction, polling, authentication, exposed endpoints and limitations.
+Machine consumers can read the [versioned integration manifest](packages/contracts/mac-control-integration.json),
+[JSON Schema](packages/contracts/mac-control-activity.schema.json),
+[bridge OpenAPI](packages/contracts/mac-control-bridge.openapi.json),
+[notifier OpenAPI](packages/contracts/openapi.json) and
+[fictional examples](packages/contracts/mac-control-examples.json).
+These are committed copies of the notifier's canonical contract bundle. The
+optional notifier has its own Python environment and setup; installing Mac Control
+does not install it or enable iPhone push provisioning.
+
 ## Implementation and checks
 
 The server uses Python's standard library. Native Objective-C helpers use Foundation, AppKit, IOKit/AppleSMC, CoreAudio, ApplicationServices, and Disk Arbitration. The frontend is plain HTML, CSS, JavaScript, and SVG; no external assets or CDN are required.
 
 ```sh
-python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py
+python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py test_notifier_bridge.py
 ```
 
-The 108 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, and viewer-driven monitoring. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
+The 111 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, viewer-driven monitoring, and notifier bridge authentication/fallback behavior. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
 
 See [implementation and maintenance details](docs/REFERENCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).

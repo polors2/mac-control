@@ -1,0 +1,1579 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DevBox Notifier",
+    "version": "0.1.0",
+    "description": "Generated contract with documented bearer authentication, authorization roles and integration response schemas. The live framework /v1/openapi.json may omit these documentation annotations; runtime authorization is enforced by dependencies. WebSocket protocol is documented in mac-control-integration.json."
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-authorization": "public"
+      }
+    },
+    "/v1/snapshot": {
+      "get": {
+        "summary": "State",
+        "operationId": "state_v1_snapshot_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotifierSnapshot"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/openapi.json": {
+      "get": {
+        "summary": "Openapi",
+        "operationId": "openapi_v1_openapi_json_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/hosts": {
+      "get": {
+        "summary": "Hosts",
+        "operationId": "hosts_v1_hosts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/hosts/{host_id}/metrics/latest": {
+      "get": {
+        "summary": "Latest",
+        "operationId": "latest_v1_hosts__host_id__metrics_latest_get",
+        "parameters": [
+          {
+            "name": "host_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Host Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/hosts/{host_id}/metrics/history": {
+      "get": {
+        "summary": "History",
+        "operationId": "history_v1_hosts__host_id__metrics_history_get",
+        "parameters": [
+          {
+            "name": "host_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Host Id"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "default": 0,
+              "title": "Since"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "default": 1000000000000.0,
+              "title": "Until"
+            }
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 3,
+              "default": 60,
+              "title": "Resolution"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/containers": {
+      "get": {
+        "summary": "Containers",
+        "operationId": "containers_v1_containers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/file-activity": {
+      "get": {
+        "summary": "Activity",
+        "operationId": "activity_v1_file_activity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileActivity"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/finder-progress": {
+      "get": {
+        "summary": "Finder Progress",
+        "operationId": "finder_progress_v1_finder_progress_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinderSnapshot"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/transfers": {
+      "get": {
+        "summary": "Transfers",
+        "operationId": "transfers_v1_transfers_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransferRecord"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      },
+      "post": {
+        "summary": "Start",
+        "operationId": "start_v1_transfers_post",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "administrator_bearer",
+        "x-availability-condition": "synthetic provider requires dev_mode=true; copy uses configured root aliases"
+      }
+    },
+    "/v1/transfers/{id}": {
+      "get": {
+        "summary": "Transfer",
+        "operationId": "transfer_v1_transfers__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/transfers/{id}/cancel": {
+      "post": {
+        "summary": "Cancel",
+        "operationId": "cancel_v1_transfers__id__cancel_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "administrator_bearer"
+      }
+    },
+    "/v1/alerts": {
+      "get": {
+        "summary": "Alerts",
+        "operationId": "alerts_v1_alerts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/alerts/{id}/ack": {
+      "post": {
+        "summary": "Acknowledge",
+        "operationId": "acknowledge_v1_alerts__id__ack_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/devices/pair-code": {
+      "post": {
+        "summary": "Code",
+        "operationId": "code_v1_devices_pair_code_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "administrator_bearer"
+      }
+    },
+    "/v1/devices/pair": {
+      "post": {
+        "summary": "Pair",
+        "operationId": "pair_v1_devices_pair_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-authorization": "public",
+        "x-availability-condition": "single-use pairing code required; five-minute expiry and pairing rate limit"
+      }
+    },
+    "/v1/devices/push-tokens": {
+      "post": {
+        "summary": "Push Token",
+        "operationId": "push_token_v1_devices_push_tokens_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushToken"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_device_bearer"
+      }
+    },
+    "/v1/devices/{id}/revoke": {
+      "post": {
+        "summary": "Revoke",
+        "operationId": "revoke_v1_devices__id__revoke_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "administrator_bearer"
+      }
+    },
+    "/v1/web-push/key": {
+      "get": {
+        "summary": "Web Push Key",
+        "operationId": "web_push_key_v1_web_push_key_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/web-push/subscription": {
+      "post": {
+        "summary": "Web Subscribe",
+        "operationId": "web_subscribe_v1_web_push_subscription_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Subscription"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_device_bearer"
+      },
+      "delete": {
+        "summary": "Web Unsubscribe",
+        "operationId": "web_unsubscribe_v1_web_push_subscription_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer"
+      }
+    },
+    "/v1/web-push/test": {
+      "post": {
+        "summary": "Web Test",
+        "operationId": "web_test_v1_web_push_test_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "paired_or_administrator_bearer",
+        "x-availability-condition": "caller must have a registered Web Push subscription"
+      }
+    },
+    "/v1/dev/test-notification": {
+      "post": {
+        "summary": "Test Notification",
+        "operationId": "test_notification_v1_dev_test_notification_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-authorization": "administrator_bearer",
+        "x-availability-condition": "dev_mode=true"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CopyRequest": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "synthetic",
+              "copy"
+            ],
+            "title": "Provider",
+            "default": "synthetic"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Display Name",
+            "default": "File transfer"
+          },
+          "source_root": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Root"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "target_root": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Root"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "bytes_total": {
+            "type": "integer",
+            "maximum": 1000000000000000.0,
+            "minimum": 0.0,
+            "title": "Bytes Total",
+            "default": 104857600
+          },
+          "duration_seconds": {
+            "type": "number",
+            "maximum": 3600.0,
+            "minimum": 1.0,
+            "title": "Duration Seconds",
+            "default": 30
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CopyRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PairRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 6,
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Name",
+            "default": "iPhone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "PairRequest"
+      },
+      "PushToken": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "alert",
+              "start",
+              "activity"
+            ],
+            "title": "Kind"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{32,512}$",
+            "title": "Token"
+          },
+          "transfer_id": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Transfer Id",
+            "default": ""
+          },
+          "ios_major": {
+            "type": "integer",
+            "maximum": 99.0,
+            "minimum": 16.0,
+            "title": "Ios Major",
+            "default": 17
+          },
+          "frequent_updates": {
+            "type": "boolean",
+            "title": "Frequent Updates",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "token"
+        ],
+        "title": "PushToken"
+      },
+      "Subscription": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 4096,
+            "title": "Endpoint"
+          },
+          "keys": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Keys"
+          },
+          "expirationTime": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expirationtime"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint",
+          "keys"
+        ],
+        "title": "Subscription"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "FinderItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "source": {
+            "const": "finder_accessibility"
+          },
+          "status": {
+            "const": "visible_in_finder"
+          },
+          "progress_accuracy": {
+            "const": "reported_by_finder_ui"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "text",
+          "percent",
+          "source",
+          "status",
+          "progress_accuracy"
+        ],
+        "description": "Ephemeral Finder UI observation. Percent is AX-reported; text contains localized displayed byte/time information. Absence does not prove completion."
+      },
+      "FinderSnapshot": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinderItem"
+            }
+          },
+          "transition": {
+            "enum": [
+              "started",
+              "updated",
+              "no_longer_visible"
+            ]
+          }
+        },
+        "required": [
+          "available",
+          "reason",
+          "items"
+        ]
+      },
+      "TransferRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1
+          },
+          "host_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "copy",
+              "synthetic"
+            ]
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "discovering_total",
+              "starting",
+              "running",
+              "paused",
+              "retrying",
+              "completed",
+              "failed",
+              "cancelled",
+              "unknown_after_restart"
+            ]
+          },
+          "bytes_done": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes_total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "bytes_per_second": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "eta_seconds": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "progress_accuracy": {
+            "enum": [
+              "exact",
+              "instrumented",
+              "estimated",
+              "unknown"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "schema_version",
+          "host_id",
+          "display_name",
+          "provider",
+          "status",
+          "bytes_done",
+          "bytes_total",
+          "percent",
+          "bytes_per_second",
+          "eta_seconds",
+          "sequence",
+          "progress_accuracy",
+          "created_at",
+          "updated_at",
+          "ended_at",
+          "error"
+        ]
+      },
+      "FilesystemObservation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "observing",
+              "quiet",
+              "unknown_after_restart"
+            ]
+          },
+          "file_size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "observed_growth_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes_done": {
+            "type": "null"
+          },
+          "bytes_total": {
+            "type": "null"
+          },
+          "percent": {
+            "type": "null"
+          },
+          "eta_seconds": {
+            "type": "null"
+          },
+          "bytes_per_second": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "progress_accuracy": {
+            "const": "estimated"
+          },
+          "source": {
+            "const": "filesystem_observation"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_epoch": {
+            "type": "number"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "status",
+          "file_size_bytes",
+          "observed_growth_bytes",
+          "bytes_done",
+          "bytes_total",
+          "percent",
+          "eta_seconds",
+          "bytes_per_second",
+          "progress_accuracy",
+          "source",
+          "updated_at",
+          "updated_epoch",
+          "note"
+        ]
+      },
+      "ObserverStatus": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "mode": {
+            "const": "filesystem_hints"
+          },
+          "accuracy": {
+            "const": "estimated"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "percent_available": {
+            "const": false
+          },
+          "finder_identity_available": {
+            "const": false
+          },
+          "coverage_degraded": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available",
+          "mode",
+          "accuracy",
+          "reason",
+          "percent_available",
+          "finder_identity_available"
+        ]
+      },
+      "FileActivity": {
+        "type": "object",
+        "properties": {
+          "observer": {
+            "$ref": "#/components/schemas/ObserverStatus"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilesystemObservation"
+            }
+          }
+        },
+        "required": [
+          "observer",
+          "items"
+        ]
+      },
+      "PushStatus": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "reason"
+        ],
+        "description": "Native APNs configuration status only. enabled is not Web Push subscription status or proof of notification delivery."
+      },
+      "BridgeHealthy": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "const": true
+          },
+          "transfers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferRecord"
+            }
+          },
+          "file_activity": {
+            "$ref": "#/components/schemas/FileActivity"
+          },
+          "finder_progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinderSnapshot"
+              },
+              {
+                "type": "object",
+                "maxProperties": 0
+              }
+            ]
+          },
+          "push": {
+            "$ref": "#/components/schemas/PushStatus"
+          }
+        },
+        "required": [
+          "available",
+          "transfers",
+          "file_activity",
+          "finder_progress",
+          "push"
+        ],
+        "description": "Authenticated bridge response. Empty finder_progress supports an older upstream without this field."
+      },
+      "BridgeUnavailable": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "const": false
+          },
+          "reason": {
+            "const": "notifier_unavailable"
+          },
+          "transfers": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "file_activity": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "maxItems": 0
+              }
+            },
+            "required": [
+              "items"
+            ]
+          }
+        },
+        "required": [
+          "available",
+          "reason",
+          "transfers",
+          "file_activity"
+        ],
+        "additionalProperties": false,
+        "description": "HTTP 200 fallback when upstream/configuration is unavailable. finder_progress, push and observer are absent. This is not proof of no active copy."
+      },
+      "BridgeResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BridgeHealthy"
+          },
+          {
+            "$ref": "#/components/schemas/BridgeUnavailable"
+          }
+        ]
+      },
+      "NotifierSnapshot": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "metrics": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "containers": {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "boolean"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            },
+            "required": [
+              "available",
+              "items"
+            ]
+          },
+          "transfers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferRecord"
+            }
+          },
+          "file_activity": {
+            "$ref": "#/components/schemas/FileActivity"
+          },
+          "finder_progress": {
+            "$ref": "#/components/schemas/FinderSnapshot"
+          },
+          "push": {
+            "$ref": "#/components/schemas/PushStatus"
+          }
+        },
+        "required": [
+          "schema_version",
+          "metrics",
+          "containers",
+          "transfers",
+          "file_activity",
+          "finder_progress",
+          "push"
+        ]
+      },
+      "BridgeConfig": {
+        "type": "object",
+        "properties": {
+          "state_dir": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Local notifier state directory. This file contains a path, not a credential."
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1024,
+            "maximum": 65535,
+            "default": 8876
+          }
+        },
+        "required": [
+          "state_dir"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Paired device or administrator credential; role restrictions are x-authorization."
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8876",
+      "description": "Loopback upstream"
+    },
+    {
+      "url": "https://{host}:8443",
+      "variables": {
+        "host": {
+          "default": "mac.example-tailnet.ts.net"
+        }
+      },
+      "description": "Private Tailscale Serve; replace with this deployment's hostname"
+    }
+  ]
+}

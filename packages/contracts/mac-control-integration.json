@@ -1,0 +1,288 @@
+{
+  "document_type": "devbox_mac_control_integration",
+  "contract_version": "1.0.0",
+  "as_of": "2026-10-31",
+  "canonical_artifacts": {
+    "human_document": "docs/integrations/mac-control.md",
+    "payload_schema": "packages/contracts/mac-control-activity.schema.json",
+    "mac_control_openapi": "packages/contracts/mac-control-bridge.openapi.json",
+    "notifier_openapi": "packages/contracts/openapi.json",
+    "examples": "packages/contracts/mac-control-examples.json"
+  },
+  "integration_mode": "browser_polling_via_authenticated_read_only_bridge",
+  "notifier_posts_to_mac_control": false,
+  "connections": [
+    {
+      "initiator": "finder_observer_app",
+      "receiver": "Finder",
+      "transport": "public_macos_accessibility_read_only",
+      "sample_interval_seconds": 3.0,
+      "requires_user_accessibility_permission": true
+    },
+    {
+      "initiator": "notifier_service",
+      "receiver": "finder_observer_app",
+      "transport": "LaunchServices launch with private local FIFO output",
+      "helper_output_has_network_listener": false
+    },
+    {
+      "initiator": "mac_control_browser",
+      "receiver": "mac_control_server",
+      "method": "GET",
+      "path": "/api/file-activity",
+      "authentication": "existing_mac_control_session_cookie",
+      "delay_after_request_ms": 2000,
+      "pause_when": [
+        "page_hidden",
+        "signed_out",
+        "page_unloaded"
+      ],
+      "rendering": "update_existing_cards_in_place"
+    },
+    {
+      "initiator": "mac_control_server",
+      "receiver": "notifier_service",
+      "method": "GET",
+      "url": "http://127.0.0.1:{configured_port}/v1/snapshot",
+      "default_port": 8876,
+      "authentication": "administrator_bearer_from_private_local_state",
+      "credential_sent_to_browser": false,
+      "timeout_seconds": 2,
+      "max_response_bytes": 2097152,
+      "uses_environment_proxy": false
+    }
+  ],
+  "network_exposure": {
+    "notifier_bind": "127.0.0.1:8876",
+    "mac_control_default_bind": "0.0.0.0:8765",
+    "mac_control_access_checks": [
+      "private_or_loopback_source",
+      "known_Host",
+      "same_site_request",
+      "valid_session_for_private_data"
+    ],
+    "tailscale_serve": {
+      "https_port": 8443,
+      "upstream": "http://127.0.0.1:8876",
+      "scope": "private_tailnet",
+      "proxied_surface": "entire_notifier_dashboard_and_API",
+      "application_authentication_still_required": true
+    },
+    "funnel_enabled_by_this_integration": false
+  },
+  "mac_control_operations": [
+    {
+      "method": "GET",
+      "path": "/api/file-activity",
+      "authentication": "existing_mac_control_session_cookie",
+      "schema": "mac-control-activity.schema.json#/$defs/BridgeResponse"
+    }
+  ],
+  "notifier_http_operations": [
+    {
+      "method": "GET",
+      "path": "/v1/health",
+      "authentication": "public"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/snapshot",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/openapi.json",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/hosts",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/hosts/{host_id}/metrics/latest",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/hosts/{host_id}/metrics/history",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/containers",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/file-activity",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/finder-progress",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/transfers",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/transfers",
+      "authentication": "administrator_bearer",
+      "condition": "synthetic provider requires dev_mode=true; copy uses configured root aliases"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/transfers/{id}",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/transfers/{id}/cancel",
+      "authentication": "administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/alerts",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/alerts/{id}/ack",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/devices/pair-code",
+      "authentication": "administrator_bearer"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/devices/pair",
+      "authentication": "public",
+      "condition": "single-use pairing code required; five-minute expiry and pairing rate limit"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/devices/push-tokens",
+      "authentication": "paired_device_bearer"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/devices/{id}/revoke",
+      "authentication": "administrator_bearer"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/web-push/key",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/web-push/subscription",
+      "authentication": "paired_device_bearer"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/web-push/subscription",
+      "authentication": "paired_or_administrator_bearer"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/web-push/test",
+      "authentication": "paired_or_administrator_bearer",
+      "condition": "caller must have a registered Web Push subscription"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/dev/test-notification",
+      "authentication": "administrator_bearer",
+      "condition": "dev_mode=true"
+    }
+  ],
+  "notifier_websocket": {
+    "path": "/v1/stream",
+    "consumers": [
+      "standalone_notifier_web_dashboard",
+      "native_ios_client"
+    ],
+    "used_by_mac_control": false,
+    "authentication": {
+      "location": "first_json_frame",
+      "shape": {
+        "token": "CREDENTIAL_PLACEHOLDER"
+      },
+      "timeout_seconds": 5,
+      "token_in_url": false
+    },
+    "initial_event": "snapshot",
+    "queue_capacity": 64,
+    "quiet_snapshot_timeout_seconds": 10,
+    "quiet_snapshot_is_not_a_fixed_heartbeat_during_continuous_events": true,
+    "client_stale_after_seconds": 15,
+    "persistent_events_include": [
+      "event_id",
+      "schema_version",
+      "observed_at",
+      "data"
+    ],
+    "event_types": [
+      "snapshot",
+      "host.metric",
+      "transfer.progress",
+      "finder.progress",
+      "filesystem.activity",
+      "container.snapshot",
+      "alert.fired",
+      "alert.recovered",
+      "observer.gap"
+    ],
+    "host_metric_shape": "metrics directly on envelope; other events wrap payload in data"
+  },
+  "local_configuration": {
+    "mac_control_file": ".runtime/notifier-bridge.json",
+    "schema": "mac-control-activity.schema.json#/$defs/BridgeConfig",
+    "credential_source": "configured state_dir/admin-token",
+    "commit_runtime_files": false
+  },
+  "semantics": {
+    "finder": {
+      "accuracy": "reported_by_finder_ui",
+      "localized_bytes_and_eta": "display text only, not parsed numeric counters",
+      "identifier_scope": "ephemeral_window_index",
+      "window_disappearance_proves_completion": false
+    },
+    "managed_copy": {
+      "accuracy": "exact",
+      "completion_requires": [
+        "worker_verification",
+        "successful_exclusive_finalization"
+      ],
+      "zero_or_unknown_total_percent": null
+    },
+    "filesystem_hints": {
+      "default_enabled": false,
+      "accuracy": "estimated",
+      "bytes_done": null,
+      "bytes_total": null,
+      "percent": null,
+      "process_identity_known": false
+    },
+    "bridge_available": "upstream request/configuration succeeded, not Finder permission or copy completion",
+    "push_enabled": "native APNs configured, not Web Push subscription or proof of delivery",
+    "upstream_unavailable": "HTTP 200 with available=false; Finder/push/observer fields absent"
+  },
+  "notifications": {
+    "delivery_is_separate_from_mac_control_bridge": true,
+    "providers": [
+      "standards_web_push",
+      "native_APNs_when_provisioned"
+    ],
+    "web_push_is_ActivityKit": false,
+    "native_live_activity_finder_relay_implemented": false
+  }
+}

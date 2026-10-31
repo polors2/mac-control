@@ -1,0 +1,98 @@
+{
+  "healthy_finder_copy": {
+    "available": true,
+    "transfers": [],
+    "file_activity": {
+      "observer": {
+        "available": false,
+        "mode": "filesystem_hints",
+        "accuracy": "estimated",
+        "reason": "disabled_by_configuration",
+        "percent_available": false,
+        "finder_identity_available": false
+      },
+      "items": []
+    },
+    "finder_progress": {
+      "available": true,
+      "reason": "visible_finder_windows_only",
+      "items": [
+        {
+          "id": "finder-0",
+          "title": "Copy",
+          "text": "Copying 2 items · 5 GB of 10 GB - About 2 minutes",
+          "percent": 50,
+          "source": "finder_accessibility",
+          "status": "visible_in_finder",
+          "progress_accuracy": "reported_by_finder_ui"
+        }
+      ],
+      "transition": "updated"
+    },
+    "push": {
+      "enabled": false,
+      "reason": "requires_apple_developer_provisioning"
+    }
+  },
+  "finder_permission_denied": {
+    "available": true,
+    "transfers": [],
+    "file_activity": {
+      "observer": {
+        "available": false,
+        "mode": "filesystem_hints",
+        "accuracy": "estimated",
+        "reason": "disabled_by_configuration",
+        "percent_available": false,
+        "finder_identity_available": false
+      },
+      "items": []
+    },
+    "finder_progress": {
+      "available": false,
+      "reason": "accessibility_permission_required",
+      "items": []
+    },
+    "push": {
+      "enabled": false,
+      "reason": "requires_apple_developer_provisioning"
+    }
+  },
+  "no_visible_finder_progress": {
+    "available": true,
+    "transfers": [],
+    "file_activity": {
+      "observer": {
+        "available": false,
+        "mode": "filesystem_hints",
+        "accuracy": "estimated",
+        "reason": "disabled_by_configuration",
+        "percent_available": false,
+        "finder_identity_available": false
+      },
+      "items": []
+    },
+    "finder_progress": {
+      "available": true,
+      "reason": "visible_finder_windows_only",
+      "items": [],
+      "transition": "no_longer_visible"
+    },
+    "push": {
+      "enabled": false,
+      "reason": "requires_apple_developer_provisioning"
+    }
+  },
+  "notifier_unavailable": {
+    "available": false,
+    "reason": "notifier_unavailable",
+    "transfers": [],
+    "file_activity": {
+      "items": []
+    }
+  },
+  "bridge_config": {
+    "state_dir": "/ABSOLUTE/PATH/TO/NOTIFIER/.runtime",
+    "port": 8876
+  }
+}

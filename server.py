@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """LAN-only Mac controls. Python standard library; native helper runs as this user."""
 import argparse
+from mac_control_bridge import snapshot as notifier_snapshot
 import collections
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -220,6 +221,10 @@ class Handler(BaseHTTPRequestHandler):
             result['fanInstaller'] = str(ROOT / 'install-fan-helper.command')
             self.json(200, result)
             return
+        if path == '/api/file-activity':
+            if self.require_session():
+                self.json(200, notifier_snapshot())
+            return
         files = {'/': ('index.html', 'text/html; charset=utf-8'),
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
                  '/compact.css': ('compact.css', 'text/css; charset=utf-8'),
@@ -228,6 +233,8 @@ class Handler(BaseHTTPRequestHandler):
                  '/drives.js': ('drives.js', 'text/javascript; charset=utf-8'),
                  '/inputs.js': ('inputs.js', 'text/javascript; charset=utf-8'),
                  '/favicon.svg': ('favicon.svg', 'image/svg+xml')}
+        files['/notifier-activity.js'] = ('notifier-activity.js', 'text/javascript; charset=utf-8')
+        files['/notifier-activity.css'] = ('notifier-activity.css', 'text/css; charset=utf-8')
         if path not in files:
             self.json(404, {'error': 'Not found.'})
             return

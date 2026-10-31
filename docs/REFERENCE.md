@@ -1,5 +1,11 @@
 # Mac Control: implementation and maintenance
 
+The separate [DevBox Notifier integration guide](integrations/mac-control.md)
+documents the activity card's browser → Mac Control → notifier pull path,
+endpoint/authentication inventory, polling behavior, private network exposure,
+failure responses and machine-readable contract bundle. The bridge does not
+replace this server's existing telemetry, authentication or hardware controls.
+
 A private intranet dashboard for display brightness, keyboard backlight, sound, separate built-in keyboard and trackpad switches, fan control, CPU, Intel GPU, and AMD GPU temperatures, USB-drive mount controls, and live system activity. The controls are at the top; the temperatures sit beside the fan buttons. No cloud service, Docker, package install, CDN, or account is required.
 
 ## One-command install and update

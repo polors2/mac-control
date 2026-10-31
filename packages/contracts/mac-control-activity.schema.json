@@ -1,0 +1,501 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DevBox / Mac Control integration payloads v1",
+  "description": "Canonical integration contract; select an individual definition through #/$defs/NAME.",
+  "$ref": "#/$defs/BridgeResponse",
+  "$defs": {
+    "FinderItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "percent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "source": {
+          "const": "finder_accessibility"
+        },
+        "status": {
+          "const": "visible_in_finder"
+        },
+        "progress_accuracy": {
+          "const": "reported_by_finder_ui"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "text",
+        "percent",
+        "source",
+        "status",
+        "progress_accuracy"
+      ],
+      "description": "Ephemeral Finder UI observation. Percent is AX-reported; text contains localized displayed byte/time information. Absence does not prove completion."
+    },
+    "FinderSnapshot": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FinderItem"
+          }
+        },
+        "transition": {
+          "enum": [
+            "started",
+            "updated",
+            "no_longer_visible"
+          ]
+        }
+      },
+      "required": [
+        "available",
+        "reason",
+        "items"
+      ]
+    },
+    "TransferRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "host_id": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "provider": {
+          "enum": [
+            "copy",
+            "synthetic"
+          ]
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "discovering_total",
+            "starting",
+            "running",
+            "paused",
+            "retrying",
+            "completed",
+            "failed",
+            "cancelled",
+            "unknown_after_restart"
+          ]
+        },
+        "bytes_done": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bytes_total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "percent": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "bytes_per_second": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "eta_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "progress_accuracy": {
+          "enum": [
+            "exact",
+            "instrumented",
+            "estimated",
+            "unknown"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "schema_version",
+        "host_id",
+        "display_name",
+        "provider",
+        "status",
+        "bytes_done",
+        "bytes_total",
+        "percent",
+        "bytes_per_second",
+        "eta_seconds",
+        "sequence",
+        "progress_accuracy",
+        "created_at",
+        "updated_at",
+        "ended_at",
+        "error"
+      ]
+    },
+    "FilesystemObservation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "observing",
+            "quiet",
+            "unknown_after_restart"
+          ]
+        },
+        "file_size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_growth_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bytes_done": {
+          "type": "null"
+        },
+        "bytes_total": {
+          "type": "null"
+        },
+        "percent": {
+          "type": "null"
+        },
+        "eta_seconds": {
+          "type": "null"
+        },
+        "bytes_per_second": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "progress_accuracy": {
+          "const": "estimated"
+        },
+        "source": {
+          "const": "filesystem_observation"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_epoch": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "status",
+        "file_size_bytes",
+        "observed_growth_bytes",
+        "bytes_done",
+        "bytes_total",
+        "percent",
+        "eta_seconds",
+        "bytes_per_second",
+        "progress_accuracy",
+        "source",
+        "updated_at",
+        "updated_epoch",
+        "note"
+      ]
+    },
+    "ObserverStatus": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "mode": {
+          "const": "filesystem_hints"
+        },
+        "accuracy": {
+          "const": "estimated"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "percent_available": {
+          "const": false
+        },
+        "finder_identity_available": {
+          "const": false
+        },
+        "coverage_degraded": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "available",
+        "mode",
+        "accuracy",
+        "reason",
+        "percent_available",
+        "finder_identity_available"
+      ]
+    },
+    "FileActivity": {
+      "type": "object",
+      "properties": {
+        "observer": {
+          "$ref": "#/$defs/ObserverStatus"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FilesystemObservation"
+          }
+        }
+      },
+      "required": [
+        "observer",
+        "items"
+      ]
+    },
+    "PushStatus": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enabled",
+        "reason"
+      ],
+      "description": "Native APNs configuration status only. enabled is not Web Push subscription status or proof of notification delivery."
+    },
+    "BridgeHealthy": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "const": true
+        },
+        "transfers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TransferRecord"
+          }
+        },
+        "file_activity": {
+          "$ref": "#/$defs/FileActivity"
+        },
+        "finder_progress": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FinderSnapshot"
+            },
+            {
+              "type": "object",
+              "maxProperties": 0
+            }
+          ]
+        },
+        "push": {
+          "$ref": "#/$defs/PushStatus"
+        }
+      },
+      "required": [
+        "available",
+        "transfers",
+        "file_activity",
+        "finder_progress",
+        "push"
+      ],
+      "description": "Authenticated bridge response. Empty finder_progress supports an older upstream without this field."
+    },
+    "BridgeUnavailable": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "const": false
+        },
+        "reason": {
+          "const": "notifier_unavailable"
+        },
+        "transfers": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "file_activity": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "maxItems": 0
+            }
+          },
+          "required": [
+            "items"
+          ]
+        }
+      },
+      "required": [
+        "available",
+        "reason",
+        "transfers",
+        "file_activity"
+      ],
+      "additionalProperties": false,
+      "description": "HTTP 200 fallback when upstream/configuration is unavailable. finder_progress, push and observer are absent. This is not proof of no active copy."
+    },
+    "BridgeResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BridgeHealthy"
+        },
+        {
+          "$ref": "#/$defs/BridgeUnavailable"
+        }
+      ]
+    },
+    "NotifierSnapshot": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "metrics": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "containers": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          },
+          "required": [
+            "available",
+            "items"
+          ]
+        },
+        "transfers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TransferRecord"
+          }
+        },
+        "file_activity": {
+          "$ref": "#/$defs/FileActivity"
+        },
+        "finder_progress": {
+          "$ref": "#/$defs/FinderSnapshot"
+        },
+        "push": {
+          "$ref": "#/$defs/PushStatus"
+        }
+      },
+      "required": [
+        "schema_version",
+        "metrics",
+        "containers",
+        "transfers",
+        "file_activity",
+        "finder_progress",
+        "push"
+      ]
+    },
+    "BridgeConfig": {
+      "type": "object",
+      "properties": {
+        "state_dir": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Local notifier state directory. This file contains a path, not a credential."
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65535,
+          "default": 8876
+        }
+      },
+      "required": [
+        "state_dir"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
