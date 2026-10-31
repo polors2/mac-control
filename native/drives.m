@@ -43,8 +43,10 @@ static NSArray *enumerate(DASessionRef session) {
                     NSURL *path = description[(__bridge id)kDADiskDescriptionVolumePathKey];
                     if (path && ![path.path hasPrefix:@"/Volumes/"]) group[@"protected"] = @YES;
                     NSString *kind = description[(__bridge id)kDADiskDescriptionVolumeKindKey];
+                    NSString *content = [description[(__bridge id)kDADiskDescriptionMediaContentKey] uppercaseString];
+                    BOOL efi = [content isEqual:@"EFI"] || [content isEqual:@"C12A7328-F81F-11D2-BA4B-00A0C93EC93B"];
                     // Empty partition-map and EFI nodes do not become user controls.
-                    if (uuid.length && kind.length && ![description[(__bridge id)kDADiskDescriptionMediaContentKey] isEqual:@"EFI"]) {
+                    if (uuid.length && kind.length && !efi) {
                         [group[@"volumes"] addObject:@{@"id": uuid, @"name": description[(__bridge id)kDADiskDescriptionVolumeNameKey] ?: @"USB volume",
                             @"device": @(DADiskGetBSDName(disk)), @"mounted": @(path != nil),
                             @"mountPoint": path.path ?: @"", @"filesystem": kind,

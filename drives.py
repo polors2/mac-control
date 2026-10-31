@@ -45,10 +45,9 @@ class DriveManager:
             self.known.setdefault(drive['id'], {}).update({key: drive[key] for key in ('id', 'name', 'model', 'size')})
         if json.dumps(self.known, sort_keys=True) != previous:
             write_settings(self.path, self.known)
-        present = {drive['id'] for drive in current}
-        disconnected = [{**drive, 'connected': False, 'mounted': False, 'state': 'disconnected', 'volumes': []}
-                        for key, drive in self.known.items() if key not in present]
-        self.cache = sorted(current + disconnected, key=lambda drive: drive['name'])
+        # Saved mount choices are private preferences, never an inventory of
+        # devices to display. Reformatting or unplugging must not leave a card.
+        self.cache = sorted(current, key=lambda drive: drive['name'])
         self.cached_at = time.monotonic()
         return {'drives': self.cache, **({'error': result['error']} if result.get('error') else {})}
 
@@ -83,10 +82,10 @@ class DriveManager:
         with self.lock:
             latest = self.adopt(self.runner('list'))
             if latest.get('error'): raise RuntimeError(latest['error'])
-            waiting = False
+            present = {drive['id'] for drive in latest['drives']}
+            waiting = any(type(drive.get('selectedMounted')) is bool for identifier, drive in self.known.items() if identifier not in present)
             for drive in latest['drives']:
                 selected = self.known[drive['id']].get('selectedMounted')
-                if type(selected) is bool and not drive['connected']: waiting = True
                 if drive['connected'] and type(selected) is bool:
                     result = self.set_mounted(drive['id'], selected)
                     if result.get('error'): raise RuntimeError(result['error'])

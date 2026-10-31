@@ -4,6 +4,7 @@ const pendingDrives=new Map();
 const driveSize=bytes=>bytes>=1e12 ? `${(bytes/1e12).toFixed(0)} TB`:`${Math.round(bytes/1e9)} GB`;
 
 function renderDrives(drives) {
+  drives=drives.filter(drive=>drive.connected);
   driveData=drives;
   const container=$('#drive-cards');container.replaceChildren();
   $('#drives-status').textContent=!authenticated ? 'SIGN IN TO CONTROL DRIVES':pendingDrives.size ? 'APPLYING MOUNT CHANGE':`${drives.filter(drive=>drive.connected).length} CONNECTED`;

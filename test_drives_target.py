@@ -37,11 +37,11 @@ class USBDriveTests(unittest.TestCase):
         self.assertTrue(result['drives'][0]['mounted'])
         self.assertIn(('mount', UUID), self.calls)
 
-    def test_disconnect_is_visible_and_cannot_be_operated_on(self):
+    def test_disconnected_drive_disappears_and_cannot_be_operated_on(self):
         self.manager.snapshot()
         self.state = {'drives': []}
         result = self.manager.snapshot(fresh=True)
-        self.assertEqual(result['drives'][0]['state'], 'disconnected')
+        self.assertEqual(result['drives'], [])
         with self.assertRaises(ValueError): self.manager.set_mounted(UUID, True)
 
     def test_busy_drive_error_is_reported_without_changing_mount_state(self):
@@ -59,6 +59,26 @@ class USBDriveTests(unittest.TestCase):
         self.assertEqual(self.calls, [('list',)])
         self.manager.set_mounted(UUID, False)
         self.assertTrue(all(call[0] in ('list', 'mount', 'unmount') for call in self.calls))
+
+    def test_connected_unmounted_drive_stays_available(self):
+        result = self.manager.set_mounted(UUID, False)
+        self.assertEqual(len(result['drives']), 1)
+        self.assertTrue(result['drives'][0]['connected'])
+        self.assertFalse(result['drives'][0]['mounted'])
+
+    def test_reformatted_drive_does_not_duplicate_old_uuid(self):
+        self.manager.snapshot()
+        identifier = '22222222-2222-4222-8222-222222222222'
+        self.state['drives'][0]['id'] = identifier
+        result = self.manager.snapshot(fresh=True)
+        self.assertEqual([drive['id'] for drive in result['drives']], [identifier])
+
+    def test_disconnected_preference_is_hidden_across_service_restart(self):
+        self.manager.set_mounted(UUID, False)
+        self.state = {'drives': []}
+        replacement = DriveManager('unused', self.manager.path, runner=self.manager.runner)
+        self.assertEqual(replacement.snapshot()['drives'], [])
+        self.assertFalse(replacement.known[UUID]['selectedMounted'])
 
 
 class TargetModeTests(unittest.TestCase):
