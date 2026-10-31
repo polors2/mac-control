@@ -4,7 +4,9 @@ cd -- "${0:A:h}"
 mkdir -p .runtime
 chmod 700 .runtime
 print 'Building the fan helper. It supports Apple Auto, bounded per-fan Constant RPMs, firmware maximum, and a 50–85°C CPU target.'
-/usr/bin/clang -fobjc-arc -O2 -framework Foundation -framework IOKit native/fans.m -o .runtime/fans
+if [[ "${MAC_CONTROL_PREBUILT:-0}" != 1 ]]; then
+    /usr/bin/clang -fobjc-arc -O2 -framework Foundation -framework IOKit native/fans.m -o .runtime/fans
+fi
 /usr/bin/python3 - "$UID" <<'PY'
 from pathlib import Path
 import plistlib, sys

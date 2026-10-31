@@ -281,7 +281,7 @@ $('#copy-url').addEventListener('click',async()=>{
 $('#media-help').addEventListener('click',async()=>{
   try {
     const info = await api('/api/connection');
-    $('#helper-path').textContent = info.helperPath || 'mac-control/.runtime/controls (inside the downloaded project)';
+    $('#helper-path').textContent = info.helperPath || 'Mac Control Media.app (the installer prints its location on the host Mac)';
     $('#help-dialog').showModal();
   } catch(error) {toast(error.message,true);}
 });

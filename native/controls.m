@@ -138,6 +138,14 @@ static NSString *media(NSString *action) {
 int main(int argc, const char *argv[]) {
     @autoreleasepool {
         @try {
+            if (argc == 1 || (argc == 2 && !strcmp(argv[1], "permission"))) {
+                [NSApplication sharedApplication];
+                [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+                NSDictionary *options = @{(__bridge id)kAXTrustedCheckOptionPrompt: @YES};
+                AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
+                [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"]];
+                return 0;
+            }
             loadBrightness(); NSString *error = nil;
             if (argc == 4 && !strcmp(argv[1], "set")) {
                 char *end = NULL; double value = strtod(argv[3], &end);

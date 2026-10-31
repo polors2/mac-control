@@ -108,10 +108,13 @@ def install():
             with sqlite3.connect(source_db) as origin, sqlite3.connect(target_db) as destination:
                 origin.backup(destination)
             target_db.chmod(0o600)
-        for name in ('controls', 'metrics', 'control-levels.json'):
+        for name in ('metrics', 'drives', 'control-levels.json'):
             origin, destination = RUNTIME / name, MANAGED_RUNTIME / name
             if origin.exists() and (name != 'control-levels.json' or not destination.exists()):
                 shutil.copy2(origin, destination)
+        media_app = RUNTIME / 'Mac Control Media.app'
+        if media_app.exists():
+            shutil.copytree(media_app, MANAGED_RUNTIME / media_app.name, dirs_exist_ok=True)
     AGENT.parent.mkdir(parents=True, exist_ok=True)
     config = {
         'Label': LABEL,

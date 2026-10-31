@@ -4,7 +4,9 @@ cd -- "${0:A:h}"
 mkdir -p .runtime
 chmod 700 .runtime
 print 'Building Mac Control Inputs.app for the macOS permission picker.'
-/usr/bin/python3 build-input-app.py
+if [[ "${MAC_CONTROL_PREBUILT:-0}" != 1 ]]; then
+    /usr/bin/python3 build-input-app.py
+fi
 /usr/bin/python3 - "$UID" <<'PY'
 from pathlib import Path
 import plistlib, sys

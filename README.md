@@ -2,9 +2,30 @@
 
 A private intranet dashboard for display brightness, keyboard backlight, sound, separate built-in keyboard and trackpad switches, fan control, CPU, Intel GPU, and AMD GPU temperatures, USB-drive mount controls, and live system activity. The controls are at the top; the temperatures sit beside the fan buttons. No cloud service, Docker, package install, CDN, or account is required.
 
-## Update the new controls
+## One-command install and update
 
-Run **update-controls.command** on the host Mac to update both the Constant fan helper and the selectable input-permission app with one administrator authentication. Enable **Mac Control Inputs** in the Input Monitoring pane it opens. If needed, use + and ⌘⇧G to select `/Library/PrivilegedHelperTools/Mac Control Inputs.app`.
+From a checkout of this repository, run as your normal Mac user:
+
+```sh
+./install.command
+```
+
+This builds all five native helpers (brightness/audio/media, metrics, USB drives, fans, and built-in inputs), installs the privileged fan and input services, deploys the dashboard, enables automatic startup, guides macOS permissions, and opens the dashboard. It asks for a new dashboard password only on first setup. Existing passwords, remembered sign-ins, saved levels, and unchanged helper installations are preserved. Administrator authentication is requested once when privileged helpers need installation or replacement. Do not run the entire installer with sudo; the web service runs as your normal user.
+
+Requirements: macOS 13 or later and Apple Command Line Tools. If the tools are missing, the command opens Apple's installer; finish it and run the same command again. Hardware support is verified on this Intel MacBook Pro; other models can expose different fan, sensor, and input interfaces.
+
+macOS privacy approval still requires your clicks. When prompted, enable **Mac Control Inputs.app** in **Input Monitoring**, and **Mac Control Media.app** in **Accessibility**, then return to Terminal and press Enter. The installer opens the appropriate settings via each app, restarts the input helper to refresh its permission, and checks the result. These permissions cannot be silently granted. If an app is missing from the list, use + and ⌘⇧G to select the app at the printed path. Inputs start enabled when their helper starts.
+
+Run the same command again to update everything. Current helpers are compared against the complete built payload and launchd configuration, so unchanged privileged helpers are kept without an unnecessary restart or permission reset. **update-controls.command** is a compatibility alias for this full installer. The individual helper installers remain available for maintenance.
+
+Optional checks:
+
+```sh
+./install.command --check    # Build/check everything without service or password changes
+./install.command --no-open # Install and report outstanding permissions without opening apps
+```
+
+The input app is installed at `/Library/PrivilegedHelperTools/Mac Control Inputs.app`. The media app runs as your user at `~/Library/Application Support/Mac Control/.runtime/Mac Control Media.app`. Hardware, USB, and graph polling remain viewer driven; installing does not enable idle graph collection.
 
 ## Open the dashboard
 
@@ -17,7 +38,7 @@ Network addresses can change. The **Network** button shows the addresses found w
 
 ## Persistent background service
 
-Double-click **start.command**, or run this from the source folder:
+Use the full installer above for initial setup. To start an already installed dashboard, double-click **start.command**, or run this from the source folder:
 
 ```sh
 /usr/bin/python3 service.py start
@@ -46,13 +67,13 @@ To change or reset the password, run `python3 password.py`. It automatically tar
 - **Display / keyboard switches:** Off sets brightness to 0%; On restores the last positive level. The display switch adjusts brightness rather than sleeping the Mac. Keyboard Off also pauses automatic keyboard brightness, and On restores its previous automatic setting. Ambient light can override the visible keyboard illumination; the dashboard reports that condition.
 - **Sound switch:** Off mutes without changing the saved volume; On unmutes and restores the last positive volume if it was set to zero. The volume slider preserves mute. Unsupported audio outputs show unavailable controls.
 - **Presets:** Workday sets 75% display, 45% keys, 30% sound and unmutes. After hours sets 35%, 25%, 15% and unmutes. Quiet time sets 50%, 30%, 0% and mutes. Only supported controls are applied. A hardware error is reported; prior successful operations remain applied.
-- **Media keys:** previous, play/pause, and next send standard macOS media keys. Enable the deployed `.runtime/controls` helper in **System Settings → Privacy & Security → Accessibility**. The dashboard’s media setup dialog shows the exact path. The active player determines playback.
+- **Media keys:** previous, play/pause, and next send standard macOS media keys. Enable the deployed `.runtime/Mac Control Media.app` helper in **System Settings → Privacy & Security → Accessibility**. The dashboard’s media setup dialog shows the exact path. The active player determines playback.
 
 ## Built-in keyboard and trackpad
 
 **Built-in keyboard** and **Built-in trackpad** are independent On/Off buttons near the top. On accepts input; Off blocks that physical device. These controls are separate from keyboard backlight. The helper matches only Apple's internal SPI/FIFO keyboard and trackpad interfaces; external keyboards, mice, Touch Bar, and remote/VNC input are excluded.
 
-On the host Mac, double-click **install-input-helper.command** and enter the Mac login password locally in Terminal. This is a separate one-time administrator setup from the fan helper. It builds and installs the locally signed app `/Library/PrivilegedHelperTools/Mac Control Inputs.app` and `/Library/LaunchDaemons/local.maccontrol.inputs.plist`. The app is selectable in the Input Monitoring picker; the old raw executable is not. The daemon runs the app’s executable as root. Opening the app from your login session requests permission and opens Input Monitoring. The dashboard automatically detects it; it does not claim an unknown device is Off before setup. If macOS denies access, add **Mac Control Inputs.app** at that app path in **System Settings → Privacy & Security → Input Monitoring**. The exact denial appears on the dashboard.
+On the host Mac, double-click **install-input-helper.command** and enter the Mac login password locally in Terminal. The full `install.command` handles this together with the fan helper; this individual script is also available for maintenance. It builds and installs the locally signed app `/Library/PrivilegedHelperTools/Mac Control Inputs.app` and `/Library/LaunchDaemons/local.maccontrol.inputs.plist`. The app is selectable in the Input Monitoring picker; the old raw executable is not. The daemon runs the app’s executable as root. Opening the app from your login session requests permission and opens Input Monitoring. The dashboard automatically detects it; it does not claim an unknown device is Off before setup. If macOS denies access, add **Mac Control Inputs.app** at that app path in **System Settings → Privacy & Security → Input Monitoring**. The exact denial appears on the dashboard.
 
 The native helper uses IOKit exclusive device access, retains the device only while disabled, and releases it to enable input. It has no input logging, key remapping, arbitrary device selector, or network listener. Its private Unix socket accepts only the installing Mac user and root, with fixed keyboard/trackpad on/off, status, restart, and enable-all commands. The ordinary web server never runs as root.
 
@@ -123,11 +144,11 @@ For loopback-only foreground operation, use `python3 server.py --host 127.0.0.1`
 Run checks with:
 
 ```sh
-python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py
+python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py
 ```
 
-52 checks cover authentication, remembered sessions, logout, restoration levels, keyboard auto-mode, counter deltas/resets, missing sensors, fan command validation, independent Constant RPM targets and firmware bounds, input command separation and validation, unknown input states, permission denials, Unix socket transport, and viewer-driven start/stop behavior. The live fan Max mode was verified against both fans’ reported maximum targets. Target mode was verified running at a 70°C goal with changing cooling demand, then returned to Auto. Both USB drives were unmounted and remounted through the live browser and restored to their original mounted state. Target blur-to-save and conditional Target/Auto UI were verified in the live browser. Constant mode was confirmed in firmware with independent 5,550/5,140 RPM targets applied from the two sliders without an Apply button; the original 60°C Target mode was restored after testing. The native base curve’s bounds and monotonicity were checked across every supported target. The persistent service was terminated deliberately and verified to restart automatically with HTTP 200. Desktop and mobile layouts were inspected.
+64 checks cover authentication, remembered sessions, logout, restoration levels, keyboard auto-mode, counter deltas/resets, missing sensors, fan command validation, independent Constant RPM targets and firmware bounds, input command separation and validation, unknown input states, permission denials, Unix socket transport, installer password preservation and fresh setup, signed-app payload comparison, build-failure ordering, and viewer-driven start/stop behavior. The live fan Max mode was verified against both fans’ reported maximum targets. Target mode was verified running at a 70°C goal with changing cooling demand, then returned to Auto. Both USB drives were unmounted and remounted through the live browser and restored to their original mounted state. Target blur-to-save and conditional Target/Auto UI were verified in the live browser. Constant mode was confirmed in firmware with independent 5,550/5,140 RPM targets applied from the two sliders without an Apply button; the original 60°C Target mode was restored after testing. The native base curve’s bounds and monotonicity were checked across every supported target. The persistent service was terminated deliberately and verified to restart automatically with HTTP 200. Desktop and mobile layouts were inspected. The complete installer passed native-build preflight and a live `--no-open` installation, preserving the existing password and remembered sessions while skipping unchanged privileged helpers. Input Monitoring is enabled; media Accessibility remains a user-approved setting and was reported as pending during that run.
 
-Native files use Apple’s Command Line Tools, which are already installed on this Mac. `native/controls.m` handles brightness and sound; `native/metrics.m` and `native/smc.h` read system statistics and thermals; `native/fans.m` and `native/fan_target.h` implement the bounded fan helper and background target loop. `native/drives.m` uses Disk Arbitration for USB mount controls; `native/inputs.m` implements exclusive access for the two internal input interfaces. Input-helper compilation, app signature, and device matching were verified. The corrected app was installed and Input Monitoring allowed. The daemon was restarted once to pick up that permission; both keyboard and trackpad were independently seized and released through the live dashboard, with both left enabled. The Python server uses only its standard library. Apple brightness and SMC interfaces are private and can change after an OS update. Unsupported controls fail visibly.
+Native files use Apple’s Command Line Tools, which are already installed on this Mac. `native/controls.m` handles brightness and sound; `native/metrics.m` and `native/smc.h` read system statistics and thermals; `native/fans.m` and `native/fan_target.h` implement the bounded fan helper and background target loop. `native/drives.m` uses Disk Arbitration for USB mount controls; `native/inputs.m` implements exclusive access for the two internal input interfaces. Input-helper compilation, app signature, and device matching were verified. The corrected app was installed and Input Monitoring allowed. The daemon was restarted once to pick up that permission; both keyboard and trackpad were independently seized and released through the live dashboard, with both left enabled. `install.command` and `installer.py` coordinate the full setup; `build_controls_app.py` creates the selectable Accessibility app. The Python server uses only its standard library. Apple brightness and SMC interfaces are private and can change after an OS update. Unsupported controls fail visibly.
 
 See `THIRD_PARTY_NOTICES.md` for AppleSMC protocol/sensor references adapted from [Stats](https://github.com/exelban/stats). Brightness interface references include [nriley/brightness](https://github.com/nriley/brightness) and [macos-keyboard-backlight](https://github.com/noluyorAbi/macos-keyboard-backlight).

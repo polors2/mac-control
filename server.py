@@ -20,10 +20,13 @@ from metrics import StatsMonitor
 from fans import FanController
 from drives import DriveManager
 from inputs import InputController
+from build_controls_app import build as build_controls_app, APP_NAME, EXECUTABLE_NAME
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / 'web'
 RUNTIME = ROOT / '.runtime'
+CONTROLS_APP = RUNTIME / APP_NAME
+CONTROLS_BINARY = CONTROLS_APP / 'Contents' / 'MacOS' / EXECUTABLE_NAME
 AUTH_LOCK = threading.Lock()
 ATTEMPTS = collections.defaultdict(collections.deque)
 AUTH = None
@@ -39,13 +42,7 @@ INFO = {}
 def prepare():
     RUNTIME.mkdir(mode=0o700, exist_ok=True)
     RUNTIME.chmod(0o700)
-    binary = RUNTIME / 'controls'
-    source = ROOT / 'native' / 'controls.m'
-    if not binary.exists() or binary.stat().st_mtime < source.stat().st_mtime:
-        print('Building the native macOS controls helper…', flush=True)
-        subprocess.run(['clang', '-fobjc-arc', '-O2', '-framework', 'Foundation',
-                        '-framework', 'AppKit', '-framework', 'CoreAudio',
-                        '-framework', 'ApplicationServices', str(source), '-o', str(binary)], check=True)
+    build_controls_app(ROOT)
     # Remove the retired code after migrating to password authentication.
     (RUNTIME / 'pairing-code').unlink(missing_ok=True)
     metrics_binary = RUNTIME / 'metrics'
@@ -210,7 +207,7 @@ class Handler(BaseHTTPRequestHandler):
             result = {key: value for key, value in INFO.items() if key != 'addresses'}
             result['local'] = self.local()
             if self.local():
-                result['helperPath'] = str(RUNTIME / 'controls')
+                result['helperPath'] = str(CONTROLS_APP)
             result['fanInstaller'] = str(ROOT / 'install-fan-helper.command')
             self.json(200, result)
             return
@@ -357,7 +354,7 @@ def main():
     args = parser.parse_args()
     prepare()
     AUTH = AuthStore(RUNTIME / 'auth.sqlite3')
-    CONTROLS = ControlManager(RUNTIME / 'controls', RUNTIME / 'control-levels.json')
+    CONTROLS = ControlManager(CONTROLS_BINARY, RUNTIME / 'control-levels.json')
     FANS = FanController()
     DRIVES = DriveManager(RUNTIME / 'drives', RUNTIME / 'drives.json')
     INPUTS = InputController()
