@@ -1,0 +1,8 @@
+.runtime/
+__pycache__/
+.DS_Store
+*.py[cod]
+.venv/
+.env
+.env.*
+!.env.example
