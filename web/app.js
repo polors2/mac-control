@@ -111,7 +111,7 @@ function render() {
   const keyboard = controlLevel('keyboard') ?? 0;
   const volume = controlLevel('volume') ?? 0;
   const muted = desired.has('volumePower') ? !desired.get('volumePower') : desired.has('mute') ? !!desired.get('mute') : !!state?.muted;
-  $('#brightness-note').textContent = !state ? 'Reading display…' : !capabilities.brightness ? 'Brightness unavailable' : display === 0 ? 'Off · previous level saved':'Built-in display';
+  $('#brightness-note').textContent = !state ? 'Reading display…' : !capabilities.brightness ? 'Brightness unavailable' : state.displayOffError ? 'Off persistence unavailable' : state.displayOff ? display === 0 ? 'Off · stays off':'Restoring Off…' : display === 0 ? 'Off · previous level saved':'Built-in display';
   $('#keyboard-note').textContent = !state ? 'Reading keyboard…' : !capabilities.keyboard ? 'No supported backlight':keyboard === 0 ? 'Off · previous level saved':state.keyboardSuppressed ? 'Limited by ambient light':state.keyboardAuto ? 'Adapting to ambient light':'Manual brightness';
   $('#volume-note').textContent = !state ? 'Reading sound…' : !capabilities.volume ? 'Output volume unavailable':muted ? 'Muted · volume saved':'Output volume';
   $('#audio-output').textContent = state?.audioOutput || 'Just the right amount of everything.';

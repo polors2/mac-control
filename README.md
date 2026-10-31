@@ -8,7 +8,7 @@ I wanted to keep my Mac offsite as a dev box keeping MacOS light and managing on
 
 ## What it does
 
-- **Display, keyboard backlight, and sound:** sliders plus On/Off buttons that remember the previous level. Includes keyboard auto brightness, media keys, and quick presets.
+- **Display, keyboard backlight, and sound:** sliders plus On/Off buttons that remember the previous level. Display Off persists through browser/VNC disconnects and service restarts until turned On again. Includes keyboard auto brightness, media keys, and quick presets.
 - **Built-in keyboard and trackpad:** separate input switches. External keyboards, mice, and remote input remain available. Both internal inputs start **On** after a Mac reboot or input-helper restart.
 - **Fans and temperatures:** prominent CPU, Intel GPU, and AMD GPU readings with four cooling modes.
 - **USB storage:** connected, formatted external USB drives appear dynamically. Each has a Mounted/Unmounted button; disconnected drives remain identified. Detection refreshes about every ten seconds while the page is visible.
@@ -66,6 +66,14 @@ These approvals require your clicks in macOS. They are not silently granted. The
 - **On another local device:** `http://YOUR_MAC_IP:8765`
 
 The **Network** button shows the host's local addresses. Sign in with the dashboard password you chose. The devices need to be able to reach each other on the LAN; guest Wi-Fi isolation, firewall settings, or browser local-network permissions may affect access.
+
+## Persistent Display Off
+
+Setting display brightness to **0%** or pressing its **Off** button saves a separate Off setting. A lightweight normal-user helper keeps only the built-in display at zero, even if macOS restores a small nonzero brightness after a remote session ends. It responds to display reconfiguration and checks brightness every two seconds; a reset can therefore appear briefly before being corrected.
+
+Press **On**, choose a nonzero brightness, or use a preset to release the guard before the new brightness is applied. On restores the last positive level; an OS/VNC brightness reset while Off does not overwrite that saved level. The saved Off setting resumes after a dashboard-service restart and at the next user login. While Off is selected, external brightness increases (including hardware keys) are intentionally corrected; use the dashboard On control or stop the service to release it.
+
+This helper does not collect CPU/GPU/network data, control external displays, or wake an already sleeping panel. It runs only while persistent Off is selected and exits when the server closes its pipe. It requires no additional administrator or privacy approval. Graph sampling remains paused without viewers.
 
 ## Fan modes
 
@@ -144,9 +152,9 @@ python3 server.py --host 127.0.0.1
 The server uses Python's standard library. Native Objective-C helpers use Foundation, AppKit, IOKit/AppleSMC, CoreAudio, ApplicationServices, and Disk Arbitration. The frontend is plain HTML, CSS, JavaScript, and SVG; no external assets or CDN are required.
 
 ```sh
-python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py
+python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py
 ```
 
-The 64 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, and viewer-driven monitoring. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
+The 76 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, and viewer-driven monitoring. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
 
 See [implementation and maintenance details](docs/REFERENCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).

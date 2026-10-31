@@ -21,6 +21,7 @@ from fans import FanController
 from drives import DriveManager
 from inputs import InputController
 from build_controls_app import build as build_controls_app, APP_NAME, EXECUTABLE_NAME
+from brightness import BrightnessKeeper
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / 'web'
@@ -43,6 +44,13 @@ def prepare():
     RUNTIME.mkdir(mode=0o700, exist_ok=True)
     RUNTIME.chmod(0o700)
     build_controls_app(ROOT)
+    brightness_binary = RUNTIME / 'brightness-keeper'
+    brightness_source = ROOT / 'native' / 'brightness.m'
+    if not brightness_binary.exists() or brightness_binary.stat().st_mtime < brightness_source.stat().st_mtime:
+        temporary = brightness_binary.with_suffix('.build')
+        subprocess.run(['clang', '-fobjc-arc', '-O2', '-framework', 'Foundation', '-framework', 'CoreGraphics',
+                        str(brightness_source), '-o', str(temporary)], check=True)
+        temporary.replace(brightness_binary)
     # Remove the retired code after migrating to password authentication.
     (RUNTIME / 'pairing-code').unlink(missing_ok=True)
     metrics_binary = RUNTIME / 'metrics'
@@ -354,7 +362,8 @@ def main():
     args = parser.parse_args()
     prepare()
     AUTH = AuthStore(RUNTIME / 'auth.sqlite3')
-    CONTROLS = ControlManager(CONTROLS_BINARY, RUNTIME / 'control-levels.json')
+    CONTROLS = ControlManager(CONTROLS_BINARY, RUNTIME / 'control-levels.json',
+                              brightness_keeper=BrightnessKeeper(RUNTIME / 'brightness-keeper'))
     FANS = FanController()
     DRIVES = DriveManager(RUNTIME / 'drives', RUNTIME / 'drives.json')
     INPUTS = InputController()
@@ -375,6 +384,7 @@ def main():
     finally:
         server.server_close()
         STATS.close()
+        CONTROLS.close()
 
 
 if __name__ == '__main__':

@@ -72,7 +72,7 @@ def helper_current(source, installed, plist_path, label, arguments, status):
 def build_all():
     from server import prepare
     print('Building and checking every native helper before changing services…', flush=True)
-    prepare()  # Brightness/audio/media app, metrics, USB Disk Arbitration helper.
+    prepare()  # Controls/media, display-off guard, metrics, USB Disk Arbitration helper.
     run(['/usr/bin/clang', '-fobjc-arc', '-O2', '-framework', 'Foundation', '-framework', 'IOKit',
          ROOT / 'native' / 'fans.m', '-o', ROOT / '.runtime' / 'fans'])
     run([sys.executable, ROOT / 'build-input-app.py'], cwd=ROOT)
@@ -181,7 +181,7 @@ def main():
         raise RuntimeError('Run ./install.command in Terminal, or use --no-open to defer privacy approval.')
     build_all()
     if args.check:
-        print('Preflight passed: controls/media, metrics, USB drives, fans, and input app built successfully.')
+        print('Preflight passed: controls/media, display-off guard, metrics, USB drives, fans, and input app built successfully.')
         return
     ensure_password()
     install_helpers()
