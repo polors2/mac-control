@@ -8,7 +8,7 @@ I wanted to keep my Mac offsite as a dev box keeping MacOS light and managing on
 
 ## What it does
 
-- **Display, keyboard backlight, and sound:** sliders plus On/Off buttons that remember the previous level. Display Off persists through browser/VNC disconnects and service restarts until turned On again. Includes keyboard auto brightness, media keys, and quick presets.
+- **Display, keyboard backlight, and sound:** sliders plus On/Off buttons that remember the previous level. Selected levels, Off/mute states, and keyboard auto brightness restore at startup. Display Off also persists through browser/VNC disconnects until turned On again. Includes keyboard auto brightness, media keys, and quick presets.
 - **Built-in keyboard and trackpad:** separate input switches. External keyboards, mice, and remote input remain available. Both internal inputs start **On** after a Mac reboot or input-helper restart.
 - **Fans and temperatures:** prominent CPU, Intel GPU, and AMD GPU readings with four cooling modes.
 - **USB storage:** connected, formatted external USB drives appear dynamically. Each has a Mounted/Unmounted button; disconnected drives remain identified. Detection refreshes about every ten seconds while the page is visible.
@@ -103,7 +103,7 @@ The list is discovered from macOS Disk Arbitration and I/O Registry metadata. Dr
 
 **Unmounting does not cut USB power or guarantee that a hard disk stops spinning.** It removes filesystem access and lets the enclosure idle where supported. The USB device stays registered so it can be remounted remotely. A busy drive returns an error; the app never force-unmounts, formats, or ejects it. Internal disks and protected system mount points are excluded.
 
-macOS may mount a drive again after reboot or reconnect. Actual power-off requires support from the enclosure or an individually switched USB hub.
+Mount/unmount choices are saved by volume UUID and reapplied to connected drives when the dashboard starts after login. Startup retries briefly allow time for disks to appear; busy volumes are never forced. macOS may mount a drive again on a later USB reconnect. Actual power-off requires support from the enclosure or an individually switched USB hub.
 
 ## Low-load monitoring and restart behavior
 
@@ -111,7 +111,9 @@ All visible dashboards share one sampler, taking readings every two seconds. Gra
 
 **Target mode continues its lightweight CPU-temperature regulation with the page closed.** Auto, Constant, and Max block waiting for commands when idle. Chosen fan modes and input Off states survive a VNC disconnect while their helpers continue running.
 
-After a reboot, the fan helper starts in Apple Auto and both built-in inputs start On. The dashboard starts after the Mac user logs in. Its own sleep-prevention assertions keep the system running independently of VNC; explicit system sleep, shutdown, and lid-close sleep are not overridden.
+Settings are saved in private runtime files and restored automatically after a service restart or Mac reboot followed by user login: display brightness (including Off), keyboard backlight and its automatic mode, volume/mute, selected fan mode with its Target temperature or Constant RPMs, and connected USB mount choices. The fan helper initially starts in Apple Auto; the dashboard reapplies the saved selection after login. Both built-in inputs always start On after a Mac/helper restart, as intended. Passwords and remembered sign-ins are retained. Updates preserve the deployed settings.
+
+Startup restoration runs independently of browser viewers, retries unavailable controls/helpers for about a minute, and stops once complete. It does not start graph sampling. The dashboard starts **after the Mac user logs in**, so it cannot apply settings at the FileVault or login screen. Its own sleep-prevention assertions keep the system running independently of VNC; explicit system sleep, shutdown, and lid-close sleep are not overridden.
 
 ## Update, start, and stop
 
@@ -152,9 +154,9 @@ python3 server.py --host 127.0.0.1
 The server uses Python's standard library. Native Objective-C helpers use Foundation, AppKit, IOKit/AppleSMC, CoreAudio, ApplicationServices, and Disk Arbitration. The frontend is plain HTML, CSS, JavaScript, and SVG; no external assets or CDN are required.
 
 ```sh
-python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py
+python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py
 ```
 
-The 76 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, and viewer-driven monitoring. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
+The 96 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, restoration over simulated boot defaults, bounded startup retries, and viewer-driven monitoring. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
 
 See [implementation and maintenance details](docs/REFERENCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).

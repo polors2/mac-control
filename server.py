@@ -22,6 +22,7 @@ from drives import DriveManager
 from inputs import InputController
 from build_controls_app import build as build_controls_app, APP_NAME, EXECUTABLE_NAME
 from brightness import BrightnessKeeper
+from persistence import StartupRestore
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / 'web'
@@ -364,7 +365,7 @@ def main():
     AUTH = AuthStore(RUNTIME / 'auth.sqlite3')
     CONTROLS = ControlManager(CONTROLS_BINARY, RUNTIME / 'control-levels.json',
                               brightness_keeper=BrightnessKeeper(RUNTIME / 'brightness-keeper'))
-    FANS = FanController()
+    FANS = FanController(memory_path=RUNTIME / 'fan-settings.json')
     DRIVES = DriveManager(RUNTIME / 'drives', RUNTIME / 'drives.json')
     INPUTS = InputController()
     INFO = local_info(args.port)
@@ -373,6 +374,8 @@ def main():
     STATS = StatsMonitor(RUNTIME / 'metrics')
     server.daemon_threads = True
     server.timeout = 5
+    restoration = StartupRestore({'controls': CONTROLS.restore, 'fans': FANS.restore, 'USB drives': DRIVES.restore})
+    restoration.start()
     print(f"Mac Control is ready: {INFO['localUrl']}", flush=True)
     for url in INFO['urls']:
         print(f'Intranet: {url}', flush=True)
@@ -384,6 +387,7 @@ def main():
     finally:
         server.server_close()
         STATS.close()
+        restoration.close()
         CONTROLS.close()
 
 

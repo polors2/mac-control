@@ -1,11 +1,11 @@
 """External USB mount controls, using cached Disk Arbitration metadata."""
 import json
-import os
 from pathlib import Path
 import re
 import subprocess
 import threading
 import time
+from persistence import write_settings
 
 
 class DriveManager:
@@ -13,7 +13,7 @@ class DriveManager:
         self.binary = str(binary)
         self.path = Path(remembered_path)
         self.runner = runner or self.native
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.cache = []
         self.cached_at = 0
         try:
@@ -42,13 +42,9 @@ class DriveManager:
                 if volume.get('readOnly') is not None: volume['readOnly'] = bool(volume['readOnly'])
         previous = json.dumps(self.known, sort_keys=True)
         for drive in current:
-            self.known[drive['id']] = {key: drive[key] for key in ('id', 'name', 'model', 'size')}
+            self.known.setdefault(drive['id'], {}).update({key: drive[key] for key in ('id', 'name', 'model', 'size')})
         if json.dumps(self.known, sort_keys=True) != previous:
-            self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-            temporary = self.path.with_suffix('.tmp')
-            descriptor = os.open(temporary, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
-            with os.fdopen(descriptor, 'w') as file: json.dump(self.known, file)
-            os.replace(temporary, self.path)
+            write_settings(self.path, self.known)
         present = {drive['id'] for drive in current}
         disconnected = [{**drive, 'connected': False, 'mounted': False, 'state': 'disconnected', 'volumes': []}
                         for key, drive in self.known.items() if key not in present]
@@ -71,7 +67,30 @@ class DriveManager:
             target = next((drive for drive in latest['drives'] if drive['id'].lower() == identifier.lower()), None)
             if not target or not target['connected']:
                 raise ValueError('This external USB drive is disconnected or unavailable.')
-            if target['mounted'] == mounted and target['state'] != 'partial': return latest
+            if target['mounted'] == mounted and target['state'] != 'partial': result = latest
             # The native helper independently revalidates UUID, external USB protocol,
             # internal-device flags, protected mount points, and whole-disk identity.
-            return self.adopt(self.runner('mount' if mounted else 'unmount', target['id']))
+            else: result = self.adopt(self.runner('mount' if mounted else 'unmount', target['id']))
+            confirmed = next((drive for drive in result['drives'] if drive['id'] == target['id']), {})
+            if not result.get('error') and confirmed.get('mounted') is mounted and confirmed.get('state') != 'partial':
+                self.known[target['id']]['selectedMounted'] = mounted
+                write_settings(self.path, self.known)
+            elif not result.get('error'):
+                result['error'] = 'macOS did not confirm the requested USB mount state.'
+            return result
+
+    def restore(self):
+        with self.lock:
+            latest = self.adopt(self.runner('list'))
+            if latest.get('error'): raise RuntimeError(latest['error'])
+            waiting = False
+            for drive in latest['drives']:
+                selected = self.known[drive['id']].get('selectedMounted')
+                if type(selected) is bool and not drive['connected']: waiting = True
+                if drive['connected'] and type(selected) is bool:
+                    result = self.set_mounted(drive['id'], selected)
+                    if result.get('error'): raise RuntimeError(result['error'])
+                elif drive['connected']:
+                    self.known[drive['id']]['selectedMounted'] = drive['mounted']
+            write_settings(self.path, self.known)
+            if waiting: raise RuntimeError('Waiting for previously selected USB drives to connect.')

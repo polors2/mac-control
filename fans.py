@@ -5,14 +5,17 @@ import re
 import socket
 import threading
 import time
+from persistence import read_settings, write_settings
 
 SOCKET_PATH = '/var/run/local.maccontrol.fans.sock'
 
 
 class FanController:
-    def __init__(self, socket_path=SOCKET_PATH):
+    def __init__(self, socket_path=SOCKET_PATH, memory_path=None):
         self.socket_path = str(socket_path)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
+        self.memory_path = memory_path
+        self.selected = read_settings(memory_path)
         self.last_check = 0
         self.installed = False
         self.cached_status = {'installed': False, 'version': 0}
@@ -57,6 +60,29 @@ class FanController:
         return bool(self.status().get('installed'))
 
     def set_mode(self, mode, temperature=None, speeds=None):
+        with self.lock:
+            result = self.apply_mode(mode, temperature, speeds)
+            self.selected = {'mode': mode}
+            if mode == 'target': self.selected['temperature'] = temperature
+            if mode == 'constant': self.selected['speeds'] = list(speeds)
+            write_settings(self.memory_path, self.selected)
+            return result
+
+    def restore(self):
+        with self.lock:
+            if not self.selected:
+                current = self.status(force=True)
+                if not current.get('installed'): raise RuntimeError('Waiting for the fan helper.')
+                mode = current.get('fanMode')
+                if mode not in ('auto', 'max', 'target', 'constant'):
+                    raise RuntimeError('Fan mode is unavailable.')
+                self.selected = {'mode': mode}
+                if mode == 'target': self.selected['temperature'] = current.get('targetTemperature')
+                if mode == 'constant': self.selected['speeds'] = current.get('constantTargets')
+                write_settings(self.memory_path, self.selected)
+            self.apply_mode(self.selected.get('mode'), self.selected.get('temperature'), self.selected.get('speeds'))
+
+    def apply_mode(self, mode, temperature=None, speeds=None):
         if mode not in ('auto', 'max', 'target', 'constant'):
             raise ValueError('Choose Apple Auto, Constant, Target, or Max.')
         command = mode
