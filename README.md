@@ -69,7 +69,7 @@ The **Network** button shows the host's local addresses. Sign in with the dashbo
 
 ## Compact control center
 
-Live CPU, Intel GPU, AMD GPU, and network graphs sit at the top. Small display and sound tiles replace the large cards; keyboard backlight and automatic brightness live inside Built-in Inputs. Desktop shows the controls, cooling, and drives together. Mobile uses Controls, Inputs, Fans & temps, and USB drives tabs beneath the graphs. The dashboard stays within the browser viewport; smaller windows or long drive lists can scroll inside their panel. Hidden/closed pages still stop graph sampling.
+Live CPU, Intel GPU, AMD GPU, and network graphs sit at the top. Small display and sound tiles replace the large cards; keyboard backlight and automatic brightness live inside Built-in Inputs. Desktop shows the controls, cooling, and drives together. Mobile uses Controls, Inputs, Fans & temps, and USB drives tabs beneath the graphs. Cards stay compressed by default and size themselves to their content. Target/Constant fields and extra drives grow only the panel that needs them; no empty height is reserved. The dashboard stays within the browser viewport; smaller windows or long lists can scroll within the panel area. Hidden/closed pages still stop graph sampling.
 
 ## Persistent Display Off
 

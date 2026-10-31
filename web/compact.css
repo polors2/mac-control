@@ -18,3 +18,12 @@ body.control-center{--ink:#26302e;--line:#d4ddd7;background:radial-gradient(elli
 .control-center .constant-fan-heading{margin-bottom:3px}.control-center .constant-fan-heading output{letter-spacing:0;line-height:1.2;white-space:nowrap}.control-center .constant-fan-row+.constant-fan-row{margin-top:5px}.control-center .constant-controls input[type=range]{display:block}.control-center .range-wrap{line-height:0}
 @media(max-width:700px){.control-center[data-panel=controls] .controls-pane .inputs-section{display:none}.control-center[data-panel=inputs] .controls-pane{display:flex;gap:10px}.control-center[data-panel=inputs] .controls-pane>section:not(.inputs-section){display:none}.control-center .panel-tabs button{font-size:9px;padding:8px 3px}.control-center .thermal-caption{font-size:6px}.control-center .target-range-note{width:auto}.control-center .fan-control-box{gap:0}}
 @media(max-width:700px) and (max-height:700px){.control-center .fan-section{gap:11px}.control-center .thermal-reading strong{font-size:32px;margin-top:5px}.control-center .constant-fan-row{margin-bottom:5px}.control-center .fan-section>.fan-bottom{padding-top:6px}}
+
+/* Size modules to content; extra fan fields and drives grow their own stack. */
+.control-center .dashboard-panels{flex:0 1 auto;grid-template-columns:1.12fr 1fr;grid-template-rows:auto;align-items:start;align-content:start;overflow:auto}
+.control-center .dashboard-pane{height:auto;max-height:none;overflow:visible}
+.control-center .controls-pane{grid-row:auto}
+.control-center .secondary-panels{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.control-center .cooling-pane,.control-center .drives-pane{grid-column:auto;grid-row:auto;flex:none}
+.control-center .stat-card{height:auto;grid-template-rows:18px 27px 38px}
+@media(max-width:700px){.control-center .dashboard-panels{display:block;flex:0 1 auto;overflow:auto}.control-center .secondary-panels{display:contents}.control-center .dashboard-pane{height:auto;max-height:none}.control-center .stat-card{height:auto;grid-template-rows:14px 22px 28px}}
