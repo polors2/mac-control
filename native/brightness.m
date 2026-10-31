@@ -1,5 +1,5 @@
-// Keep only the built-in display at zero while Display Off is selected.
-// No telemetry, keyboard hooks, privileged writes, or display-sleep assertions.
+// Keep built-in brightness at zero, or enforce the separate display-sleep choice.
+// No telemetry, keyboard hooks, root privileges, or system sleep.
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
 #include <dispatch/dispatch.h>
@@ -7,6 +7,9 @@
 #include <signal.h>
 #include <math.h>
 #include <unistd.h>
+#import "display_power.h"
+
+static BOOL holdSleep = NO;
 
 static int (*getBrightness)(CGDirectDisplayID, float *);
 static int (*setBrightness)(CGDirectDisplayID, float);
@@ -14,6 +17,13 @@ static unsigned failures = 0;
 
 static void keepOff(void) {
     @autoreleasepool {
+        if (holdSleep) {
+            id asleep = mcDisplayAsleep();
+            if ([asleep isEqual:@YES]) { failures = 0; return; }
+            failures = mcSleepDisplays() == kIOReturnSuccess ? 0 : failures + 1;
+            if (failures >= 3) exit(3);
+            return;
+        }
         CGDirectDisplayID displays[32]; uint32_t count = 0;
         if (CGGetOnlineDisplayList(32, displays, &count) != kCGErrorSuccess) return;
         BOOL attempted = NO, failed = NO;
@@ -39,12 +49,13 @@ static void displayChanged(CGDirectDisplayID display, CGDisplayChangeSummaryFlag
 }
 int main(int argc, const char *argv[]) {
     @autoreleasepool {
-        if (argc != 2 || strcmp(argv[1], "hold-off")) return 2;
+        if (argc != 2 || (strcmp(argv[1], "hold-off") && strcmp(argv[1], "hold-sleep"))) return 2;
+        holdSleep = !strcmp(argv[1], "hold-sleep");
         void *library = dlopen("/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices", RTLD_LAZY);
-        if (!library) return 3;
-        getBrightness = dlsym(library, "DisplayServicesGetBrightness");
-        setBrightness = dlsym(library, "DisplayServicesSetBrightness");
-        if (!getBrightness || !setBrightness) return 3;
+        if (!library && !holdSleep) return 3;
+        getBrightness = library ? dlsym(library, "DisplayServicesGetBrightness") : NULL;
+        setBrightness = library ? dlsym(library, "DisplayServicesSetBrightness") : NULL;
+        if (!holdSleep && (!getBrightness || !setBrightness)) return 3;
         signal(SIGPIPE, SIG_IGN);
         CGDisplayRegisterReconfigurationCallback(displayChanged, NULL);
         // Closing the parent's pipe releases this guard even if the web server crashes.

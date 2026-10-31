@@ -130,6 +130,18 @@ class HTTPAuthenticationTests(unittest.TestCase):
         self.assertEqual(self.request('/api/logout', {}, cookie=token_cookie)[0], 200)
         self.assertFalse(self.request('/api/session', cookie=token_cookie)[2]['authenticated'])
 
+    def test_display_sleep_is_authenticated_and_accepts_only_zero_or_one(self):
+        self.assertEqual(self.request('/api/control', {'control': 'displaySleep', 'value': 1})[0], 401)
+        _, headers, _ = self.request('/api/session', {'password': self.password})
+        cookie = headers['Set-Cookie'].split(';', 1)[0]
+        with patch.object(server, 'hardware', return_value={'displaySleep': True, 'capabilities': {'displaySleep': True}}) as hardware:
+            for value in (-1, 2, True, None, '1'):
+                self.assertEqual(self.request('/api/control', {'control': 'displaySleep', 'value': value}, cookie=cookie)[0], 400)
+            hardware.assert_not_called()
+            for value in (0, 1):
+                self.assertEqual(self.request('/api/control', {'control': 'displaySleep', 'value': value}, cookie=cookie)[0], 200)
+            self.assertEqual(hardware.call_args.args, ('set', 'displaySleep', '1'))
+
     def test_unremembered_login_uses_browser_session_cookie(self):
         status, headers, _ = self.request('/api/session', {'password': self.password, 'remember': False})
         self.assertEqual(status, 200)

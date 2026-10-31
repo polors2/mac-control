@@ -142,4 +142,87 @@ class KeeperTests(unittest.TestCase):
         finally: keeper.close()
 
 
+
+class DisplaySleepTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.path = Path(self.temp.name)/'levels.json'
+        self.mac = FakeMac()
+        self.mac.state['capabilities']['displaySleep'] = True
+        self.keeper = FakeKeeper(); self.brightness = FakeKeeper()
+        def native(*args):
+            if args[:2] == ('set', 'displaySleep'):
+                self.assertFalse(self.keeper.enabled)
+            return self.mac(*args)
+        self.manager = ControlManager('unused', self.path, runner=native,
+                                      brightness_keeper=self.brightness, display_keeper=self.keeper)
+
+    def tearDown(self): self.temp.cleanup()
+
+    def test_choice_restores_without_a_browser_after_reboot(self):
+        self.manager.perform('set', 'displaySleep', '1')
+        self.assertTrue(json.loads(self.path.read_text())['displaySleep'])
+        replacement = FakeKeeper()
+        manager = ControlManager('unused', self.path, runner=self.mac, display_keeper=replacement)
+        self.assertTrue(replacement.enabled)
+        self.mac.calls.clear(); manager.restore()
+        self.assertEqual(self.mac.calls[-1], ('set', 'displaySleep', '1'))
+
+    def test_off_releases_sleep_guard_before_wake_and_restores_brightness(self):
+        self.manager.perform('set', 'brightness', '0')
+        self.manager.perform('set', 'displaySleep', '1')
+        result = self.manager.perform('set', 'displaySleep', '0.0')
+        self.assertFalse(result['displaySleep']); self.assertFalse(result['displayOff'])
+        self.assertFalse(self.keeper.enabled); self.assertFalse(self.brightness.enabled)
+        self.assertEqual(result['brightness'], 63)
+        self.assertFalse(json.loads(self.path.read_text())['displaySleep'])
+
+    def test_positive_brightness_releases_sleep_and_wakes_first(self):
+        self.manager.perform('set', 'displaySleep', '1')
+        self.mac.calls.clear()
+        result = self.manager.perform('set', 'brightness', '45')
+        self.assertFalse(result['displaySleep'])
+        self.assertEqual(self.mac.calls[0], ('set', 'displaySleep', '0'))
+        self.assertEqual(result['brightness'], 45)
+
+    def test_sound_does_not_release_sleep_selection(self):
+        self.manager.perform('set', 'displaySleep', '1')
+        self.manager.perform('set', 'volume', '14')
+        self.assertTrue(self.keeper.enabled)
+        self.assertTrue(json.loads(self.path.read_text())['displaySleep'])
+
+    def test_failed_wake_keeps_saved_selection_and_guard(self):
+        self.manager.perform('set', 'displaySleep', '1')
+        def failed(*args):
+            state = self.mac(*args)
+            if args[:2] == ('set', 'displaySleep'): state['error'] = 'Rejected'
+            return state
+        self.manager.runner = failed
+        result = self.manager.perform('set', 'displaySleep', '0')
+        self.assertEqual(result['error'], 'Rejected')
+        self.assertTrue(result['displaySleep']); self.assertTrue(self.keeper.enabled)
+        self.assertTrue(json.loads(self.path.read_text())['displaySleep'])
+
+    def test_brightness_zero_does_not_implicitly_enable_display_sleep(self):
+        self.manager.perform('set', 'brightness', '0')
+        self.assertFalse(self.manager.display_sleep)
+        self.assertFalse(self.keeper.enabled)
+
+    def test_disabled_choice_stays_disabled_after_restart_without_wake_on_login(self):
+        self.manager.perform('set', 'displaySleep', '1')
+        self.manager.perform('set', 'displaySleep', '0')
+        replacement = FakeKeeper()
+        manager = ControlManager('unused', self.path, runner=self.mac, display_keeper=replacement)
+        self.mac.calls.clear(); manager.restore()
+        self.assertFalse(replacement.enabled)
+        self.assertFalse(any(call[:2] == ('set', 'displaySleep') for call in self.mac.calls))
+
+    def test_guard_error_is_visible_and_close_releases_it(self):
+        self.manager.perform('set', 'displaySleep', '1')
+        self.keeper.error = 'Unavailable'
+        result = self.manager.perform(fresh=True)
+        self.assertEqual(result['displaySleepError'], 'Unavailable')
+        self.manager.close(); self.assertFalse(self.keeper.enabled)
+
+
 if __name__ == '__main__': unittest.main()

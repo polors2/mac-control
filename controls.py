@@ -8,12 +8,14 @@ import time
 
 
 class ControlManager:
-    def __init__(self, binary, memory_path, runner=None, brightness_keeper=None):
+    def __init__(self, binary, memory_path, runner=None, brightness_keeper=None, display_keeper=None):
         self.binary = str(binary)
         self.memory_path = Path(memory_path)
         self.runner = runner or self.run_native
         self.brightness_keeper = brightness_keeper
         self.display_off = False
+        self.display_keeper = display_keeper
+        self.display_sleep = False
         self.desired = {}
         self.lock = threading.Lock()
         self.cached = None
@@ -27,6 +29,7 @@ class ControlManager:
             if isinstance(saved.get('keyboardAuto'), bool):
                 self.levels['keyboardAuto'] = saved['keyboardAuto']
             self.display_off = saved.get('displayOff') is True
+            self.display_sleep = saved.get('displaySleep') is True
             requested = saved.get('selected', {})
             if isinstance(requested, dict):
                 for key in ('brightness', 'keyboard', 'volume'):
@@ -41,6 +44,7 @@ class ControlManager:
         except (OSError, ValueError, TypeError):
             pass
         if self.brightness_keeper: self.brightness_keeper.set_enabled(self.display_off)
+        if self.display_keeper: self.display_keeper.set_enabled(self.display_sleep)
 
     def run_native(self, *args):
         try:
@@ -68,7 +72,7 @@ class ControlManager:
         temporary = self.memory_path.with_suffix('.tmp')
         descriptor = os.open(temporary, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
         with os.fdopen(descriptor, 'w') as file:
-            json.dump({**self.levels, 'displayOff': self.display_off, 'selected': self.desired}, file)
+            json.dump({**self.levels, 'displayOff': self.display_off, 'displaySleep': self.display_sleep, 'selected': self.desired}, file)
             file.flush()
             os.fsync(file.fileno())
         os.replace(temporary, self.memory_path)
@@ -87,6 +91,7 @@ class ControlManager:
             commands += [(key, self.desired[key]) for key in ('brightness', 'keyboard', 'volume') if key in self.desired]
             commands += [('mute', int(self.desired['muted']))] if 'muted' in self.desired else []
             commands += [('keyboardAuto', 1)] if self.desired.get('keyboardAuto') is True else []
+            if self.display_sleep: commands.append(('displaySleep', 1))
             errors = []
             for key, value in commands:
                 if not state['capabilities'].get(key):
@@ -144,13 +149,33 @@ class ControlManager:
     def perform(self, *args, fresh=False):
         with self.lock:
             brightness_change = len(args) >= 3 and args[0] in ('set', 'toggle') and args[1] == 'brightness'
+            sleep_change = len(args) >= 3 and args[:2] == ('set', 'displaySleep')
+            wake_brightness = brightness_change and float(args[2]) > 0 and self.display_sleep
+            if sleep_change or wake_brightness:
+                if self.display_keeper: self.display_keeper.set_enabled(False)
             # Release and reap the guard before any explicit brightness command. It
             # must never race a request to turn the screen back on.
             if brightness_change and self.brightness_keeper: self.brightness_keeper.set_enabled(False)
+            if sleep_change and float(args[2]) == 0 and self.brightness_keeper: self.brightness_keeper.set_enabled(False)
             if not args and not fresh and self.cached and time.monotonic() - self.cached_at < 0.5:
                 return {**self.cached, 'restoreLevels': dict(self.levels)}
             try:
-                if args and args[0] == 'toggle':
+                if wake_brightness:
+                    wake = self.runner('set', 'displaySleep', '0')
+                    if wake.get('error'): raise RuntimeError(wake['error'])
+                if sleep_change:
+                    before = self.runner('status'); self.remember(before)
+                    state = self.runner(*args)
+                    sleeping = float(args[2]) == 1
+                    if not state.get('error') and not sleeping:
+                        state = self.runner('set', 'brightness', str(self.levels['brightness']))
+                    if not state.get('error'):
+                        self.display_sleep = sleeping
+                        if not sleeping:
+                            self.display_off = False
+                            self.capture_selection(state, 'brightness')
+                    self.save()
+                elif args and args[0] == 'toggle':
                     state = self.toggle(args[1], args[2] == '1')
                     if brightness_change and not state.get('error'): self.display_off = args[2] == '0'
                     if not state.get('error'): self.capture_selection(state, args[1])
@@ -170,14 +195,22 @@ class ControlManager:
                     self.save()
                 else:
                     state = self.runner(*(args or ('status',)))
+                if wake_brightness and not state.get('error'):
+                    self.display_sleep = False
+                    self.save()
             finally:
-                if brightness_change and self.brightness_keeper: self.brightness_keeper.set_enabled(self.display_off)
+                if (brightness_change or sleep_change) and self.brightness_keeper: self.brightness_keeper.set_enabled(self.display_off)
+                if (sleep_change or wake_brightness) and self.display_keeper: self.display_keeper.set_enabled(self.display_sleep)
             guard = self.brightness_keeper.status() if self.brightness_keeper else {}
             state['displayOff'] = self.display_off
             state['displayOffError'] = guard.get('error') if self.display_off else None
+            power_guard = self.display_keeper.status() if self.display_keeper else {}
+            state['displaySleep'] = self.display_sleep
+            state['displaySleepError'] = power_guard.get('error') if self.display_sleep else None
             self.cached = {key: value for key, value in state.items() if key != 'error'}
             self.cached_at = time.monotonic()
             return {**state, 'restoreLevels': dict(self.levels)}
 
     def close(self):
         if self.brightness_keeper: self.brightness_keeper.close()
+        if self.display_keeper: self.display_keeper.close()

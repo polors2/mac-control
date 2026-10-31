@@ -95,7 +95,7 @@ function render() {
     const value = controlLevel(control);
     const available = online && supported;
     const range = $(`#${control}`), card = $(`[data-control="${control}"]`);
-    range.disabled = !available;
+    range.disabled = !available || (control==='brightness' && !!state?.displaySleep);
     card.classList.toggle('unavailable', state !== null && !supported);
     card.classList.toggle('saving', desired.has(control) || desired.has(`${control}Power`));
     $(`#${control}-value`).textContent = value == null ? '—' : Math.round(value);
@@ -104,7 +104,7 @@ function render() {
     range.setAttribute('aria-valuetext', value == null ? 'Unavailable':`${Math.round(value)} percent`);
     card.style.setProperty('--art-level',(value ?? 0)/100);
     card.style.setProperty('--sun-rotation',`${(value ?? 0)*1.4}deg`);
-    document.querySelectorAll(`[data-step^="${control}:"],[data-max="${control}"]`).forEach(button => {button.disabled = !available;});
+    document.querySelectorAll(`[data-step^="${control}:"],[data-max="${control}"]`).forEach(button => {button.disabled = !available || (control==='brightness' && !!state?.displaySleep);});
   }
   $('#device-name').textContent = state?.device || 'Your Mac';
   const display = controlLevel('brightness') ?? 50;
@@ -118,12 +118,17 @@ function render() {
   document.querySelectorAll('[data-power]').forEach(button=>{
     const control=button.dataset.power;
     const enabled=control==='volume' ? !muted && volume>0 : (controlLevel(control) ?? 0)>0;
-    button.disabled=!online || !capabilities[control==='volume' ? 'mute':control];
+    button.disabled=!online || !capabilities[control==='volume' ? 'mute':control] || (control==='brightness' && !!state?.displaySleep);
     button.setAttribute('aria-pressed',String(enabled));
     button.querySelector('.power-label').textContent=enabled ? 'On':'Off';
     button.title=enabled ? (control==='volume' ? 'Mute sound':`Set ${control==='brightness' ? 'display brightness':'keyboard backlight'} to 0%`) : 'Restore previous level';
     $(`[data-control="${control}"]`).classList.toggle('is-off',!!state && !enabled);
   });
+  const displaySleep=desired.has('displaySleep') ? !!desired.get('displaySleep'):!!state?.displaySleep;
+  $('#display-sleep').disabled=!online || !capabilities.displaySleep;
+  $('#display-sleep').setAttribute('aria-pressed',String(displaySleep));
+  $('#display-sleep .state-label').textContent=displaySleep ? 'On':'Off';
+  $('#display-sleep-note').textContent=state?.displaySleepError ? 'Could not keep display asleep':displaySleep ? 'Display off · saved across restarts':'Saved across restarts · resumes after login';
   const auto = desired.has('keyboardPower') && !desired.get('keyboardPower') ? false : desired.has('keyboardAuto') ? !!desired.get('keyboardAuto'):!!state?.keyboardAuto;
   $('#keyboard-auto').disabled = !online || !capabilities.keyboardAuto;
   $('#keyboard-auto').setAttribute('aria-pressed',String(auto));
@@ -191,6 +196,7 @@ document.querySelectorAll('[data-step]').forEach(button => button.addEventListen
 }));
 document.querySelectorAll('[data-max]').forEach(button => button.addEventListener('click',()=>enqueue(button.dataset.max,100,true)));
 document.querySelectorAll('[data-power]').forEach(button=>button.addEventListener('click',()=>enqueue(`${button.dataset.power}Power`,button.getAttribute('aria-pressed')!=='true',true)));
+$('#display-sleep').addEventListener('click',()=>enqueue('displaySleep',Number(!(desired.has('displaySleep') ? desired.get('displaySleep'):state.displaySleep)),true));
 $('#keyboard-auto').addEventListener('click',()=>enqueue('keyboardAuto',Number(!(desired.has('keyboardAuto') ? desired.get('keyboardAuto'):state.keyboardAuto)),true));
 document.querySelectorAll('[data-preset]').forEach(button => button.addEventListener('click',()=>{
   const preset = presets[button.dataset.preset];
@@ -308,3 +314,25 @@ async function start() {
   setInterval(()=>{if (!document.hidden) refresh();},2500);
 }
 start();
+
+// Content panels keep the complete control center within a mobile viewport.
+function selectPanel(name, focus=false) {
+  document.body.dataset.panel=name;
+  $('#panel-controls').setAttribute('aria-label',name==='inputs' ? 'Built-in inputs':'Controls');
+  document.querySelectorAll('[data-panel][role=tab]').forEach(button=>{
+    const selected=button.dataset.panel===name;
+    button.setAttribute('aria-selected',String(selected));button.tabIndex=selected ? 0:-1;
+    if(selected && focus) button.focus();
+  });
+}
+document.querySelectorAll('[data-panel][role=tab]').forEach(button=>{
+  button.addEventListener('click',()=>selectPanel(button.dataset.panel));
+  button.addEventListener('keydown',event=>{
+    const tabs=[...document.querySelectorAll('[data-panel][role=tab]')];
+    let index=tabs.indexOf(button);
+    if(event.key==='ArrowRight') index=(index+1)%tabs.length;
+    else if(event.key==='ArrowLeft') index=(index+tabs.length-1)%tabs.length;
+    else if(event.key==='Home') index=0;else if(event.key==='End') index=tabs.length-1;else return;
+    event.preventDefault();selectPanel(tabs[index].dataset.panel,true);
+  });
+});

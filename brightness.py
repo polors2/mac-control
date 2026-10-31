@@ -4,8 +4,10 @@ import threading
 
 
 class BrightnessKeeper:
-    def __init__(self, binary, factory=None, retry_interval=2):
+    def __init__(self, binary, factory=None, retry_interval=2, command='hold-off'):
+        if command not in ('hold-off', 'hold-sleep'): raise ValueError('Unknown display guard mode.')
         self.binary = str(binary)
+        self.command = command
         self.factory = factory or subprocess.Popen
         self.retry_interval = retry_interval
         self.condition = threading.Condition()
@@ -26,7 +28,7 @@ class BrightnessKeeper:
             self.error = 'The display-off guard exited; retrying.'
         if self.process is None:
             try:
-                self.process = self.factory([self.binary, 'hold-off'], stdin=subprocess.PIPE,
+                self.process = self.factory([self.binary, self.command], stdin=subprocess.PIPE,
                                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             except OSError:
                 self.error = 'Could not keep the display off. Run the installer to rebuild its helper.'

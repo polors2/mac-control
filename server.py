@@ -47,9 +47,9 @@ def prepare():
     build_controls_app(ROOT)
     brightness_binary = RUNTIME / 'brightness-keeper'
     brightness_source = ROOT / 'native' / 'brightness.m'
-    if not brightness_binary.exists() or brightness_binary.stat().st_mtime < brightness_source.stat().st_mtime:
+    if not brightness_binary.exists() or brightness_binary.stat().st_mtime < max(brightness_source.stat().st_mtime, (ROOT / 'native' / 'display_power.h').stat().st_mtime):
         temporary = brightness_binary.with_suffix('.build')
-        subprocess.run(['clang', '-fobjc-arc', '-O2', '-framework', 'Foundation', '-framework', 'CoreGraphics',
+        subprocess.run(['clang', '-fobjc-arc', '-O2', '-framework', 'Foundation', '-framework', 'CoreGraphics', '-framework', 'IOKit',
                         str(brightness_source), '-o', str(temporary)], check=True)
         temporary.replace(brightness_binary)
     # Remove the retired code after migrating to password authentication.
@@ -222,6 +222,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         files = {'/': ('index.html', 'text/html; charset=utf-8'),
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
+                 '/compact.css': ('compact.css', 'text/css; charset=utf-8'),
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                  '/stats.js': ('stats.js', 'text/javascript; charset=utf-8'),
                  '/drives.js': ('drives.js', 'text/javascript; charset=utf-8'),
@@ -332,13 +333,13 @@ class Handler(BaseHTTPRequestHandler):
                 state = hardware('toggle', control, '1' if enabled else '0')
             elif path == '/api/control':
                 control, value = body.get('control'), body.get('value')
-                if control not in ('brightness', 'keyboard', 'volume', 'mute', 'keyboardAuto'):
+                if control not in ('brightness', 'keyboard', 'volume', 'mute', 'keyboardAuto', 'displaySleep'):
                     self.json(400, {'error': 'Unknown control.'})
                     return
                 if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 100 or not math.isfinite(value):
                     self.json(400, {'error': 'Value must be a number from 0 to 100.'})
                     return
-                if control in ('mute', 'keyboardAuto') and value not in (0, 1):
+                if control in ('mute', 'keyboardAuto', 'displaySleep') and value not in (0, 1):
                     self.json(400, {'error': 'Toggle value must be 0 or 1.'})
                     return
                 state = hardware('set', control, str(value))
@@ -364,7 +365,8 @@ def main():
     prepare()
     AUTH = AuthStore(RUNTIME / 'auth.sqlite3')
     CONTROLS = ControlManager(CONTROLS_BINARY, RUNTIME / 'control-levels.json',
-                              brightness_keeper=BrightnessKeeper(RUNTIME / 'brightness-keeper'))
+                              brightness_keeper=BrightnessKeeper(RUNTIME / 'brightness-keeper'),
+                              display_keeper=BrightnessKeeper(RUNTIME / 'brightness-keeper', command='hold-sleep'))
     FANS = FanController(memory_path=RUNTIME / 'fan-settings.json')
     DRIVES = DriveManager(RUNTIME / 'drives', RUNTIME / 'drives.json')
     INPUTS = InputController()

@@ -67,7 +67,13 @@ These approvals require your clicks in macOS. They are not silently granted. The
 
 The **Network** button shows the host's local addresses. Sign in with the dashboard password you chose. The devices need to be able to reach each other on the LAN; guest Wi-Fi isolation, firewall settings, or browser local-network permissions may affect access.
 
+## Compact control center
+
+Live CPU, Intel GPU, AMD GPU, and network graphs sit at the top. Small display and sound tiles replace the large cards; keyboard backlight and automatic brightness live inside Built-in Inputs. Desktop shows the controls, cooling, and drives together. Mobile uses Controls, Inputs, Fans & temps, and USB drives tabs beneath the graphs. The dashboard stays within the browser viewport; smaller windows or long drive lists can scroll inside their panel. Hidden/closed pages still stop graph sampling.
+
 ## Persistent Display Off
+
+**Keep display off** is a separate saved toggle that requests actual display sleep while the Mac and dashboard keep running. It restores its On or Off choice after service restart and after a reboot followed by user login, with no page open. While enabled, a tiny display-only helper reapplies sleep if another app or remote session wakes the display. Turning it Off releases that helper, wakes the display, and restores the previous positive brightness. A nonzero brightness command or preset also wakes the display and clears the saved sleep choice. macOS display sleep can affect attached displays as well. It does not apply at the FileVault or login screen before the user session starts. No administrator helper update is needed.
 
 Setting display brightness to **0%** or pressing its **Off** button saves a separate Off setting. A lightweight normal-user helper keeps only the built-in display at zero, even if macOS restores a small nonzero brightness after a remote session ends. It responds to display reconfiguration and checks brightness every two seconds; a reset can therefore appear briefly before being corrected.
 
@@ -94,6 +100,7 @@ Auto and Max hide the editable fan fields. Target cooling uses a bounded adaptiv
 ![Target-temperature mode](docs/screenshots/fans-target.jpg)
 
 <img src="docs/screenshots/mobile.jpg" alt="Mac Control on a narrow mobile screen" width="340">
+<img src="docs/screenshots/mobile-inputs.jpg" alt="Built-in inputs and keyboard light on mobile" width="340">
 
 </details>
 
@@ -157,6 +164,6 @@ The server uses Python's standard library. Native Objective-C helpers use Founda
 python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py
 ```
 
-The 99 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, restoration over simulated boot defaults, bounded startup retries, and viewer-driven monitoring. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
+The 108 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, and viewer-driven monitoring. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
 
 See [implementation and maintenance details](docs/REFERENCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
