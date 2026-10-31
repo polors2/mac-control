@@ -1,6 +1,6 @@
 # Mac Control
 
-A self-hosted macOS dashboard for everyday controls, fan management, temperatures, USB drives, and live system activity. Run it directly on the host Mac and open it from another device on the same local network.
+I wanted to keep my Mac offsite as a dev box keeping MacOS light and managing only through GUI. This enables remote management of the keyboard commands (screen brightness, keyboard brightness, etc.) as well as USB management and disabling built-in controls. A self-hosted macOS dashboard for everyday controls, fan management, temperatures, USB drives, and live system activity. Run it directly on the host Mac and open it from another device on the same local network or over tailscale.
 
 ![Mac Control dashboard](docs/screenshots/dashboard.jpg)
 
