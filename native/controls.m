@@ -5,6 +5,7 @@
 #import <objc/message.h>
 #import <dlfcn.h>
 #include <math.h>
+#import "display_power.h"
 
 // Private brightness APIs are resolved dynamically: unsupported systems fail closed.
 static int (*displayGet)(CGDirectDisplayID, float *);
@@ -85,16 +86,20 @@ static NSDictionary *status(void) {
     if (hasAuto) autoKeys = ((BOOL (*)(id, SEL, uint64_t))objc_msgSend)(keyboardClient, NSSelectorFromString(@"isAutoBrightnessEnabledForKeyboard:"), keyboardID);
     BOOL suppressed = NO;
     if (hasKeyboard && [keyboardClient respondsToSelector:NSSelectorFromString(@"isBacklightSuppressedOnKeyboard:")]) suppressed = ((BOOL (*)(id, SEL, uint64_t))objc_msgSend)(keyboardClient, NSSelectorFromString(@"isBacklightSuppressedOnKeyboard:"), keyboardID);
-    return @{@"brightness": hasDisplay ? @(roundf(light * 100)) : (id)[NSNull null],
+    return @{@"displayAsleep": mcDisplayAsleep(), @"brightness": hasDisplay ? @(roundf(light * 100)) : (id)[NSNull null],
         @"keyboard": keyboardAvailable ? @(roundf(keys * 100)) : (id)[NSNull null],
         @"volume": hasVolume ? @(roundf(volume * 100)) : (id)[NSNull null], @"muted": @(muted != 0),
         @"keyboardAuto": @(autoKeys), @"keyboardSuppressed": @(suppressed), @"audioOutput": output,
-        @"capabilities": @{@"brightness": @(hasDisplay), @"keyboard": @(keyboardAvailable), @"volume": @(hasVolume), @"mute": @(hasMute), @"keyboardAuto": @(hasAuto), @"media": @(AXIsProcessTrusted())}};
+        @"capabilities": @{@"displaySleep": @(mcCanSleepDisplays()), @"brightness": @(hasDisplay), @"keyboard": @(keyboardAvailable), @"volume": @(hasVolume), @"mute": @(hasMute), @"keyboardAuto": @(hasAuto), @"media": @(AXIsProcessTrusted())}};
 }
 
 static NSString *setControl(NSString *control, double value) {
     if (!isfinite(value) || value < 0 || value > 100) return @"Value must be between 0 and 100.";
-    if ([control isEqual:@"brightness"]) {
+    if ([control isEqual:@"displaySleep"]) {
+        if (value != 0 && value != 1) return @"Display Off must be 0 or 1.";
+        IOReturn result = value ? mcSleepDisplays() : mcWakeDisplays();
+        if (result != kIOReturnSuccess) return @"macOS could not change display power.";
+    } else if ([control isEqual:@"brightness"]) {
         CGDirectDisplayID display = targetDisplay();
         if (!displaySet || (displayCan && !displayCan(display)) || displaySet(display, value / 100) != 0) return @"This display does not support brightness control.";
     } else if ([control isEqual:@"keyboard"]) {

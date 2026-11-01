@@ -12,7 +12,7 @@ def build(root):
     app = root / '.runtime' / APP_NAME
     binary = app / 'Contents' / 'MacOS' / EXECUTABLE_NAME
     source = root / 'native' / 'controls.m'
-    if binary.exists() and (app / 'Contents' / 'Info.plist').exists() and binary.stat().st_mtime >= max(source.stat().st_mtime, Path(__file__).stat().st_mtime):
+    if binary.exists() and (app / 'Contents' / 'Info.plist').exists() and binary.stat().st_mtime >= max(source.stat().st_mtime, (root / 'native' / 'display_power.h').stat().st_mtime, Path(__file__).stat().st_mtime):
         signature = subprocess.run(['/usr/bin/codesign', '--verify', '--strict', str(app)], capture_output=True)
         if signature.returncode == 0: return app
     binary.parent.mkdir(parents=True, exist_ok=True)
@@ -27,7 +27,7 @@ def build(root):
     }
     (app / 'Contents' / 'Info.plist').write_bytes(plistlib.dumps(info))
     subprocess.run(['/usr/bin/clang', '-fobjc-arc', '-O2', '-framework', 'Foundation',
-                    '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'ApplicationServices',
+                    '-framework', 'IOKit', '-framework', 'AppKit', '-framework', 'CoreAudio', '-framework', 'ApplicationServices',
                     str(source), '-o', str(binary)], check=True)
     subprocess.run(['/usr/bin/codesign', '--force', '--sign', '-', '--identifier',
                     'local.maccontrol.controls', str(app)], check=True)

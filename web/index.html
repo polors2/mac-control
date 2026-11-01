@@ -8,54 +8,72 @@
   <title>Mac Control</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/compact.css">
   <script src="/app.js" defer></script>
   <script src="/stats.js" defer></script>
   <script src="/drives.js" defer></script>
   <script src="/inputs.js" defer></script>
+  <link rel="stylesheet" href="/notifier-activity.css">
+  <script src="/notifier-activity.js" defer></script>
 </head>
-<body>
+<body class="control-center" data-panel="controls">
   <div class="app-shell">
     <header class="topbar">
       <a class="brand" href="/" aria-label="Mac Control home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>mac control<span class="brand-slash">/</span></a>
       <div class="header-actions"><span class="connection"><span class="status-dot"></span><span id="connection-label">Connecting</span></span><button id="network-device" class="button network-button"><span data-icon="devices"></span><span>Network</span><span class="arrow">↗</span></button><button id="logout" class="icon-button logout-button" aria-label="Sign out" title="Sign out" hidden><span data-icon="logout"></span></button></div>
     </header>
     <main>
-      <section class="controls-section" aria-label="Mac controls">
+<section class="stats-section" aria-label="Live system statistics">
+        <div class="section-heading"><h2>System activity</h2><span class="stats-status" id="stats-status"><i></i><span>Waiting for your Mac</span></span></div>
+        <div class="stats-grid">
+          <article class="stat-card cpu-stat"><div class="stat-heading"><span class="stat-icon" data-icon="cpu"></span><h3>CPU</h3><span class="stat-badge">ALL CORES</span></div><div class="stat-value"><output id="cpu-stat-value">—</output><span>%</span><div class="stat-detail" id="cpu-stat-detail">Collecting a sample…</div></div><svg preserveAspectRatio="none" class="stat-chart" id="cpu-chart" viewBox="0 0 320 114" role="img" aria-label="CPU utilization history"></svg><div class="chart-time"><span>2 min ago</span><span>Now</span></div></article>
+          <article class="stat-card gpu-stat"><div class="stat-heading"><span class="stat-icon" data-icon="gpu"></span><h3>Intel GPU</h3><span class="stat-badge" id="gpu-stat-name">INTEGRATED</span></div><div class="stat-value"><output id="gpu-stat-value">—</output><span>%</span><div class="stat-detail" id="gpu-stat-detail">Reading Intel graphics…</div></div><svg preserveAspectRatio="none" class="stat-chart" id="gpu-chart" viewBox="0 0 320 114" role="img" aria-label="Intel GPU utilization history"></svg><div class="chart-time"><span>2 min ago</span><span>Now</span></div></article>
+          <article class="stat-card amd-stat"><div class="stat-heading"><span class="stat-icon" data-icon="gpu"></span><h3>AMD GPU</h3><span class="stat-badge" id="amd-stat-name">DISCRETE</span></div><div class="stat-value"><output id="amd-stat-value">—</output><span>%</span><div class="stat-detail" id="amd-stat-detail">Reading Radeon graphics…</div></div><svg preserveAspectRatio="none" class="stat-chart" id="amd-chart" viewBox="0 0 320 114" role="img" aria-label="AMD GPU utilization history"></svg><div class="chart-time"><span>2 min ago</span><span>Now</span></div></article>
+          <article class="stat-card network-stat"><div class="stat-heading"><span class="stat-icon" data-icon="network"></span><h3>Network</h3><span class="stat-badge">LIVE I/O</span></div><div class="network-values"><div><span class="network-direction"><i class="download-dot"></i>↓ DOWNLOAD</span><strong id="download-stat-value">—</strong></div><div><span class="network-direction"><i class="upload-dot"></i>↑ UPLOAD</span><strong id="upload-stat-value">—</strong></div></div><svg preserveAspectRatio="none" class="stat-chart" id="network-chart" viewBox="0 0 320 114" role="img" aria-label="Network download and upload rate history"></svg><div class="chart-time"><span>2 min ago</span><span id="network-stat-detail">Bytes per second</span><span>Now</span></div></article>
+        </div>
+        <p class="stats-footnote">Two-second samples · Last two minutes · Graphs pause when all dashboards are hidden or closed. Target fan regulation continues in the helper.</p>
+      </section>
+<nav class="panel-tabs" role="tablist" aria-label="Control panels"><button id="tab-controls" role="tab" aria-controls="panel-controls" aria-selected="true" data-panel="controls">Controls</button><button id="tab-inputs" role="tab" aria-controls="panel-inputs" aria-selected="false" data-panel="inputs" tabindex="-1">Inputs</button><button id="tab-cooling" role="tab" aria-controls="panel-cooling" aria-selected="false" data-panel="cooling" tabindex="-1">Fans &amp; temps</button><button id="tab-drives" role="tab" aria-controls="panel-drives" aria-selected="false" data-panel="drives" tabindex="-1">USB drives</button></nav>
+<div class="dashboard-panels">
+<div id="panel-controls" class="dashboard-pane controls-pane" aria-label="Controls"><section class="controls-section" aria-label="Mac controls">
         <div class="section-heading"><h1 id="device-name">Your Mac</h1><span class="section-meta" id="sync-label">SYNCING WITH YOUR MAC</span></div>
         <div class="controls-grid">
           <article class="control-card" data-control="brightness">
             <div class="card-top"><span class="control-icon display-icon" data-icon="sun"></span><span class="card-index">01 / DISPLAY</span><button class="power-toggle" data-power="brightness" aria-pressed="false" aria-label="Display brightness on/off" disabled><span data-icon="power"></span><span class="power-label">Off</span></button></div>
-            <div class="card-heading"><h3>Brightness</h3><span class="control-description">A little light goes a long way.</span></div>
+            <div class="card-heading"><h3>Brightness</h3><span class="control-description">Built-in display</span></div>
             <div class="value-row"><output id="brightness-value" for="brightness">—</output><span class="value-unit">%</span><div class="level-art sun-art" aria-hidden="true"><span></span></div></div>
             <div class="range-wrap"><input type="range" id="brightness" min="0" max="100" value="0" aria-label="Display brightness" disabled></div>
             <div class="range-labels"><button data-step="brightness:-5" aria-label="Decrease display brightness"><span data-icon="sun-small"></span></button><span id="brightness-note">Reading display…</span><button data-step="brightness:5" aria-label="Increase display brightness"><span data-icon="sun"></span></button></div>
           </article>
-          <article class="control-card" data-control="keyboard">
-            <div class="card-top"><span class="control-icon keyboard-icon" data-icon="keyboard"></span><span class="card-index">02 / KEYBOARD</span><button class="power-toggle" data-power="keyboard" aria-pressed="false" aria-label="Keyboard backlight on/off" disabled><span data-icon="power"></span><span class="power-label">Off</span></button></div>
-            <div class="card-heading"><h3>Backlight</h3><span class="control-description">Find your keys. Keep your flow.</span></div>
-            <div class="value-row"><output id="keyboard-value" for="keyboard">—</output><span class="value-unit">%</span><div class="level-art keys-art" aria-hidden="true"><i></i><i></i><i></i></div></div>
-            <div class="range-wrap"><input type="range" id="keyboard" min="0" max="100" value="0" aria-label="Keyboard backlight" disabled></div>
-            <div class="range-labels"><button data-step="keyboard:-5" aria-label="Decrease keyboard backlight"><span data-icon="keyboard-dim"></span></button><span id="keyboard-note">Reading keyboard…</span><button data-step="keyboard:5" aria-label="Increase keyboard backlight"><span data-icon="keyboard"></span></button></div>
-          </article>
+
           <article class="control-card" data-control="volume">
             <div class="card-top"><span class="control-icon volume-icon" data-icon="volume"></span><span class="card-index">03 / SOUND</span><button class="power-toggle" data-power="volume" aria-pressed="false" aria-label="Sound on/off" disabled><span data-icon="power"></span><span class="power-label">Off</span></button></div>
-            <div class="card-heading"><h3>Volume</h3><span class="control-description" id="audio-output">Just the right amount of everything.</span></div>
+            <div class="card-heading"><h3>Volume</h3><span class="control-description" id="audio-output">Output volume</span></div>
             <div class="value-row"><output id="volume-value" for="volume">—</output><span class="value-unit">%</span><div class="level-art sound-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
             <div class="range-wrap"><input type="range" id="volume" min="0" max="100" value="0" aria-label="Output volume" disabled></div>
             <div class="range-labels"><button data-step="volume:-5" aria-label="Decrease volume"><span data-icon="volume-low"></span></button><span id="volume-note">Reading sound…</span><button data-step="volume:5" aria-label="Increase volume"><span data-icon="volume"></span></button></div>
           </article>
         </div>
-      </section>
-      <section class="inputs-section" aria-label="Built-in input controls">
+      <div class="display-power-row"><span class="display-power-symbol" data-icon="moon"></span><div><h3>Keep display off</h3><p id="display-sleep-note">Saved across restarts · resumes after login</p></div><button id="display-sleep" class="state-toggle" aria-label="Keep display off" aria-pressed="false" disabled><span class="state-label">Off</span></button></div></section><section id="panel-inputs" class="inputs-section" aria-label="Built-in input controls">
         <div class="section-heading"><h2>Built-in inputs</h2><span class="section-meta" id="inputs-status">CHECKING INPUT STATE</span></div>
         <div class="input-grid">
           <article class="input-card"><span class="input-symbol" data-icon="keyboard"></span><div class="input-copy"><h3>Built-in keyboard</h3><p id="input-keyboard-note">Reading input state…</p></div><button id="input-keyboard" class="state-toggle" aria-label="Built-in keyboard state unavailable" disabled>—</button></article>
           <article class="input-card"><span class="input-symbol" data-icon="trackpad"></span><div class="input-copy"><h3>Built-in trackpad</h3><p id="input-trackpad-note">Reading input state…</p></div><button id="input-trackpad" class="state-toggle" aria-label="Built-in trackpad state unavailable" disabled>—</button></article>
         </div>
-        <div class="inputs-bottom"><p>Separate from keyboard backlight. External keyboards, mice, and remote control stay available. Inputs return On when the helper restarts.</p><button id="inputs-setup" class="fan-setup-button"><span id="inputs-setup-label">Enable input controls</span> <span>↗</span></button></div>
+        <div class="backlight-row"><div class="control-card keyboard-light" data-control="keyboard">
+            <div class="card-top"><span class="control-icon keyboard-icon" data-icon="keyboard"></span><span class="card-index">02 / KEYBOARD</span><button class="power-toggle" data-power="keyboard" aria-pressed="false" aria-label="Keyboard backlight on/off" disabled><span data-icon="power"></span><span class="power-label">Off</span></button></div>
+            <div class="card-heading"><h3>Backlight</h3><span class="control-description">Keyboard light</span></div>
+            <div class="value-row"><output id="keyboard-value" for="keyboard">—</output><span class="value-unit">%</span><div class="level-art keys-art" aria-hidden="true"><i></i><i></i><i></i></div></div>
+            <div class="range-wrap"><input type="range" id="keyboard" min="0" max="100" value="0" aria-label="Keyboard backlight" disabled></div>
+            <div class="range-labels"><button data-step="keyboard:-5" aria-label="Decrease keyboard backlight"><span data-icon="keyboard-dim"></span></button><span id="keyboard-note">Reading keyboard…</span><button data-step="keyboard:5" aria-label="Increase keyboard backlight"><span data-icon="keyboard"></span></button></div>
+          </div><div class="auto-panel"><div><h3>Auto light</h3><p>Ambient light</p></div><button id="keyboard-auto" class="state-toggle" aria-pressed="false" aria-label="Automatic keyboard brightness" disabled><span class="state-label">Off</span></button></div></div><div class="inputs-bottom"><p>External input stays available. Built-in inputs start On after reboot.</p><button id="inputs-setup" class="fan-setup-button"><span id="inputs-setup-label">Enable input controls</span> <span>↗</span></button></div>
         <p id="inputs-permission-note" class="inputs-permission-note" role="status" hidden>macOS blocked input control. Allow Mac Control Inputs in System Settings → Privacy &amp; Security → Input Monitoring, then try the switch again. Both input states above show the actual result.</p>
-      </section>
-      <section class="fan-section" aria-label="Fans and temperatures">
+      </section><section class="extras-grid" aria-label="Quick controls">
+        <div class="touch-strip"><div class="strip-copy"><span class="strip-icon" data-icon="music"></span><div><h2>Media</h2><p id="media-description">Your Mac’s media keys, right here.</p></div></div><div class="media-controls"><button data-media="previous" class="media-button" aria-label="Previous track" disabled><span data-icon="previous"></span></button><button data-media="play" class="media-button play-button" aria-label="Send play or pause media key" disabled><span data-icon="play"></span></button><button data-media="next" class="media-button" aria-label="Next track" disabled><span data-icon="next"></span></button></div><button id="media-help" class="strip-help">Enable media keys <span>↗</span></button></div>
+
+      </section><section class="presets-section" aria-label="Quick presets"><div class="presets-label"><span data-icon="sparkles"></span><div><h2>Quick presets</h2><p>Three controls. One tap.</p></div></div><div class="preset-buttons"><button class="preset" data-preset="work"><span data-icon="sun"></span><span>Workday<small>75% light · 45% keys · 30% sound</small></span><span class="preset-arrow">↗</span></button><button class="preset" data-preset="evening"><span data-icon="moon"></span><span>After hours<small>35% light · 25% keys · 15% sound</small></span><span class="preset-arrow">↗</span></button><button class="preset" data-preset="quiet"><span data-icon="muted"></span><span>Quiet time<small>50% light · 30% keys · muted</small></span><span class="preset-arrow">↗</span></button></div></section></div>
+<div class="secondary-panels">
+<div id="panel-cooling" class="dashboard-pane cooling-pane" aria-label="Cooling"><section class="fan-section" aria-label="Fans and temperatures">
         <div class="thermal-readings">
           <div class="thermal-reading"><span class="thermal-caption"><span data-icon="cpu"></span>CPU TEMPERATURE</span><strong id="cpu-temperature">—°C</strong><span class="thermal-sensor" id="cpu-temperature-label">CPU sensor</span></div>
           <div class="thermal-reading gpu-thermal"><span class="thermal-caption"><span data-icon="gpu"></span>INTEL GPU TEMP</span><strong id="gpu-temperature">—°C</strong><span class="thermal-sensor" id="gpu-temperature-label">Intel GPU sensor</span></div>
@@ -63,24 +81,11 @@
         </div>
         <div class="fan-control-box"><div class="fan-heading"><span class="fan-symbol" data-icon="fan"></span><div><h2>Fan control</h2><p id="fan-mode-description">Apple manages fan speed by default.</p></div></div><div class="fan-mode-buttons" role="group" aria-label="Fan management mode"><button id="fan-auto" aria-pressed="false" disabled><span data-icon="sparkles"></span><span>Auto<small>Apple-managed</small></span></button><button id="fan-constant" aria-pressed="false" disabled><span data-icon="fan"></span><span>Constant<small>Per-fan RPM</small></span></button><button id="fan-target" aria-pressed="false" disabled><span data-icon="thermometer"></span><span>Target<small>CPU temperature</small></span></button><button id="fan-max" aria-pressed="false" disabled><span data-icon="fan"></span><span>Max<small>Maximum RPM</small></span></button></div><form id="target-form" class="target-controls" hidden><label for="cpu-target-input">CPU target</label><div class="target-input-wrap"><input id="cpu-target-input" type="number" min="50" max="85" step="1" value="70" inputmode="numeric" aria-label="Target CPU temperature"><span>°C</span></div><span class="target-range-note">50–85°C · saves when you leave the field</span></form><div class="target-curve-preview" id="target-curve-preview" hidden><svg viewBox="0 0 220 36" aria-hidden="true"><path d="M0 34H220" stroke="#e0e7d5" fill="none"/><path d="M2 33 52 28 104 21 156 13 186 6 218 2" stroke="#98ac7f" fill="none" stroke-width="1.5"/></svg><span id="target-curve-label">Base curve: 55°C → 70°C → max at 76°C</span></div><div id="constant-controls" class="constant-controls" hidden><div id="constant-fans"></div><p>Firmware limits · saves when you release each slider</p></div></div>
         <div class="fan-bottom"><div class="fan-readings" id="fan-readings"><span>Reading fan speeds…</span></div><button id="fan-setup" class="fan-setup-button">Enable fan control <span>↗</span></button></div>
-      </section>
-      <section class="drives-section" aria-label="USB drive controls"><div class="section-heading"><h2>USB drives</h2><span class="section-meta" id="drives-status">CHECKING MOUNT STATE</span></div><div id="drive-cards" class="drive-grid"><p class="drive-empty">Reading connected USB drives…</p></div><p class="drives-note">Unmounting removes file access and allows idle sleep where supported. It does not cut USB power; spin-down is controlled by the enclosure.</p></section>
-      <section class="extras-grid" aria-label="Quick controls">
-        <div class="touch-strip"><div class="strip-copy"><span class="strip-icon" data-icon="music"></span><div><h2>Media controls</h2><p id="media-description">Your Mac’s media keys, right here.</p></div></div><div class="media-controls"><button data-media="previous" class="media-button" aria-label="Previous track" disabled><span data-icon="previous"></span></button><button data-media="play" class="media-button play-button" aria-label="Send play or pause media key" disabled><span data-icon="play"></span></button><button data-media="next" class="media-button" aria-label="Next track" disabled><span data-icon="next"></span></button></div><button id="media-help" class="strip-help">Enable media keys <span>↗</span></button></div>
-        <div class="auto-panel"><div><h3>Keyboard auto brightness</h3><p>Automatic keyboard brightness</p></div><button id="keyboard-auto" class="state-toggle" aria-pressed="false" aria-label="Automatic keyboard brightness" disabled><span class="state-label">Off</span></button></div>
-      </section>
-      <section class="stats-section" aria-label="Live system statistics">
-        <div class="section-heading"><h2>System activity</h2><span class="stats-status" id="stats-status"><i></i><span>Waiting for your Mac</span></span></div>
-        <div class="stats-grid">
-          <article class="stat-card cpu-stat"><div class="stat-heading"><span class="stat-icon" data-icon="cpu"></span><h3>CPU</h3><span class="stat-badge">ALL CORES</span></div><div class="stat-value"><output id="cpu-stat-value">—</output><span>%</span><div class="stat-detail" id="cpu-stat-detail">Collecting a sample…</div></div><svg class="stat-chart" id="cpu-chart" viewBox="0 0 320 114" role="img" aria-label="CPU utilization history"></svg><div class="chart-time"><span>2 min ago</span><span>Now</span></div></article>
-          <article class="stat-card gpu-stat"><div class="stat-heading"><span class="stat-icon" data-icon="gpu"></span><h3>Intel GPU</h3><span class="stat-badge" id="gpu-stat-name">INTEGRATED</span></div><div class="stat-value"><output id="gpu-stat-value">—</output><span>%</span><div class="stat-detail" id="gpu-stat-detail">Reading Intel graphics…</div></div><svg class="stat-chart" id="gpu-chart" viewBox="0 0 320 114" role="img" aria-label="Intel GPU utilization history"></svg><div class="chart-time"><span>2 min ago</span><span>Now</span></div></article>
-          <article class="stat-card amd-stat"><div class="stat-heading"><span class="stat-icon" data-icon="gpu"></span><h3>AMD GPU</h3><span class="stat-badge" id="amd-stat-name">DISCRETE</span></div><div class="stat-value"><output id="amd-stat-value">—</output><span>%</span><div class="stat-detail" id="amd-stat-detail">Reading Radeon graphics…</div></div><svg class="stat-chart" id="amd-chart" viewBox="0 0 320 114" role="img" aria-label="AMD GPU utilization history"></svg><div class="chart-time"><span>2 min ago</span><span>Now</span></div></article>
-          <article class="stat-card network-stat"><div class="stat-heading"><span class="stat-icon" data-icon="network"></span><h3>Network</h3><span class="stat-badge">LIVE I/O</span></div><div class="network-values"><div><span class="network-direction"><i class="download-dot"></i>↓ DOWNLOAD</span><strong id="download-stat-value">—</strong></div><div><span class="network-direction"><i class="upload-dot"></i>↑ UPLOAD</span><strong id="upload-stat-value">—</strong></div></div><svg class="stat-chart" id="network-chart" viewBox="0 0 320 114" role="img" aria-label="Network download and upload rate history"></svg><div class="chart-time"><span>2 min ago</span><span id="network-stat-detail">Bytes per second</span><span>Now</span></div></article>
-        </div>
-        <p class="stats-footnote">Two-second samples · Last two minutes · Graphs pause when all dashboards are hidden or closed. Target fan regulation continues in the helper.</p>
-      </section>
-      <section class="presets-section" aria-label="Quick presets"><div class="presets-label"><span data-icon="sparkles"></span><div><h2>Quick presets</h2><p>Three controls. One tap.</p></div></div><div class="preset-buttons"><button class="preset" data-preset="work"><span data-icon="sun"></span><span>Workday<small>75% light · 45% keys · 30% sound</small></span><span class="preset-arrow">↗</span></button><button class="preset" data-preset="evening"><span data-icon="moon"></span><span>After hours<small>35% light · 25% keys · 15% sound</small></span><span class="preset-arrow">↗</span></button><button class="preset" data-preset="quiet"><span data-icon="muted"></span><span>Quiet time<small>50% light · 30% keys · muted</small></span><span class="preset-arrow">↗</span></button></div></section>
-    </main>
+      </section></div>
+<div id="panel-drives" class="dashboard-pane drives-pane" aria-label="Drives"><section class="drives-section" aria-label="USB drive controls"><div class="section-heading"><h2>USB drives</h2><span class="section-meta" id="drives-status">CHECKING MOUNT STATE</span></div><div id="drive-cards" class="drive-grid"><p class="drive-empty">Reading connected USB drives…</p></div><p class="drives-note">Unmount allows idle sleep; USB power stays on.</p></section></div>
+</div>
+</div>
+</main>
     <footer><span><span class="footer-logo" data-icon="shield"></span>Stays on your network. Feels right at home.</span><span id="footer-status">LOCAL FIRST. ALWAYS.</span></footer>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
