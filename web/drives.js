@@ -1,5 +1,5 @@
 'use strict';
-let driveData=[], driveRequest=false, driveTimer, driveGeneration=0;
+let driveData=[], driveRequest=false, unlockDrive=null, driveTimer, driveGeneration=0;
 const pendingDrives=new Map();
 const driveSize=bytes=>bytes>=1e12 ? `${(bytes/1e12).toFixed(0)} TB`:`${Math.round(bytes/1e9)} GB`;
 
@@ -20,34 +20,53 @@ function renderDrives(drives) {
     const heading=document.createElement('div');heading.className='drive-heading';
     const name=document.createElement('h3');name.textContent=drive.name;
     const subtitle=document.createElement('p');
-    const filesystems=[...new Set((drive.volumes || []).map(volume=>volume.filesystem.toUpperCase()))];
-    subtitle.textContent=[drive.model,driveSize(drive.size),...filesystems].filter(Boolean).join(' · ');
+    const filesystems=[...new Set((drive.volumes || []).map(volume=>(volume.filesystem || '').toUpperCase()))];
+    subtitle.textContent=[driveSize(drive.size),...filesystems,drive.encrypted ? 'Encrypted':null].filter(Boolean).join(' · ');
     heading.append(name,subtitle);
     const button=document.createElement('button');button.className='state-toggle drive-mount-button';
     button.setAttribute('aria-pressed',String(!!drive.mounted));button.setAttribute('aria-label',`${drive.mounted ? 'Unmount':'Mount'} ${drive.name}`);
     button.disabled=!authenticated || !drive.connected || pendingDrives.size>0;
-    button.textContent=pendingDrives.has(drive.id) ? pendingDrives.get(drive.id) ? 'Mounting…':'Unmounting…':drive.connected ? drive.mounted ? 'Mounted':'Unmounted':'Disconnected';
+    button.textContent=pendingDrives.has(drive.id) ? pendingDrives.get(drive.id) ? 'Mounting…':'Unmounting…':drive.locked ? 'Unlock':drive.mounted ? 'Mounted':'Unmounted';
     button.addEventListener('click',()=>changeDrive(drive));
     top.append(symbol,heading,button);
     const status=document.createElement('div');status.className='drive-state';
     const dot=document.createElement('i');dot.className=drive.mounted ? 'is-mounted':'';
     const label=document.createElement('span');
-    label.textContent=!drive.connected ? 'USB disconnected':drive.state==='partial' ? 'Some volumes are mounted':drive.mounted ? (drive.volumes || []).filter(volume=>volume.mounted).map(volume=>volume.mountPoint).join(' · '):'Unmounted · available to remount';
+    label.textContent=drive.locked ? 'Locked · password required':!drive.connected ? 'USB disconnected':drive.state==='partial' ? 'Some volumes are mounted':drive.mounted ? (drive.volumes || []).filter(volume=>volume.mounted).map(volume=>volume.mountPoint).join(' · '):'Unmounted · available to remount';
     status.append(dot,label);card.append(top,status);container.append(card);
   }
 }
-async function changeDrive(drive) {
+function promptUnlock(drive,message='') {
+  unlockDrive=drive;$('#drive-password').value='';
+  $('#drive-unlock-title').textContent=`Unlock ${drive.name}`;
+  $('#drive-unlock-error').textContent=message;
+  if(!$('#drive-unlock-dialog').open) $('#drive-unlock-dialog').showModal();
+  $('#drive-password').focus();
+}
+async function changeDrive(drive,password=null) {
   if(pendingDrives.size) return;
   const mount=!drive.mounted;
+  if(mount && drive.locked && password===null) {promptUnlock(drive);return false;}
   pendingDrives.set(drive.id,mount);renderDrives(driveData);
   try {
-    const result=await api('/api/drives',{id:drive.id,mounted:mount},30000);
-    driveData=result.drives;toast(`${drive.name} ${mount ? 'mounted':'unmounted'}.`);
+    const request={id:drive.id,mounted:mount};if(password!==null) request.password=password;
+    const result=await api('/api/drives',request,password===null?30000:50000);
+    driveData=result.drives;toast(`${drive.name} ${mount ? 'mounted':'unmounted'}.`);return true;
   } catch(error) {
     if(error.data?.drives) driveData=error.data.drives;
-    toast(error.message,true);
+    if(error.data?.requiresPassword || password!==null) promptUnlock(drive,password!==null ? error.message:'');
+    else toast(error.message,true);
+    return false;
   } finally {pendingDrives.clear();renderDrives(driveData);scheduleDrives();}
 }
+$('#drive-unlock-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(!unlockDrive || pendingDrives.size) return;
+  const drive=unlockDrive, field=$('#drive-password'), secret=field.value;
+  field.value='';$('#drive-unlock-submit').disabled=true;$('#drive-unlock-submit').textContent='Unlocking…';$('#drive-unlock-error').textContent='';
+  try {if(await changeDrive(drive,secret)) $('#drive-unlock-dialog').close();}
+  finally {$('#drive-unlock-submit').disabled=false;$('#drive-unlock-submit').textContent='Unlock & mount';}
+});
+$('#drive-unlock-dialog').addEventListener('close',()=>{unlockDrive=null;$('#drive-password').value='';$('#drive-unlock-error').textContent='';});
 function scheduleDrives(delay=10000) {
   clearTimeout(driveTimer);
   if(authenticated && !document.hidden && !driveRequest && !pendingDrives.size) driveTimer=setTimeout(refreshDrives,delay);

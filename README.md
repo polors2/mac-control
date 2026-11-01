@@ -73,7 +73,7 @@ Live CPU, Intel GPU, AMD GPU, and network graphs sit at the top. Small display a
 
 ## Persistent Display Off
 
-**Keep display off** is a separate saved toggle that requests actual display sleep while the Mac and dashboard keep running. It restores its On or Off choice after service restart and after a reboot followed by user login, with no page open. While enabled, a tiny display-only helper reapplies sleep if another app or remote session wakes the display. Turning it Off releases that helper, wakes the display, and restores the previous positive brightness. A nonzero brightness command or preset also wakes the display and clears the saved sleep choice. macOS display sleep can affect attached displays as well. It does not apply at the FileVault or login screen before the user session starts. No administrator helper update is needed.
+**Display sleep** provides explicit **Sleep** and **Wake** actions and saves the resulting choice. It is a separate saved control that requests actual display sleep while the Mac and dashboard keep running. It restores its On or Off choice after service restart and after a reboot followed by user login, with no page open. While enabled, a tiny display-only helper reapplies sleep if another app or remote session wakes the display. Turning it Off releases that helper, wakes the display, and restores the previous positive brightness. A nonzero brightness command or preset also wakes the display and clears the saved sleep choice. macOS display sleep can affect attached displays as well. It does not apply at the FileVault or login screen before the user session starts. No administrator helper update is needed.
 
 Setting display brightness to **0%** or pressing its **Off** button saves a separate Off setting. A lightweight normal-user helper keeps only the built-in display at zero, even if macOS restores a small nonzero brightness after a remote session ends. It responds to display reconfiguration and checks brightness every two seconds; a reset can therefore appear briefly before being corrected.
 
@@ -106,11 +106,21 @@ Auto and Max hide the editable fan fields. Target cooling uses a bounded adaptiv
 
 ## USB drive behavior
 
+Locked **encrypted APFS** volumes show **Unlock**. Enter the volume password in the dashboard prompt; a wrong password keeps the prompt open with a retry message. The password goes through stdin to macOS diskutil, never command-line arguments, settings, or logs, and the form clears it after submission or cancellation. Saved mount choices do not save encryption passwords: a drive that locks after reboot/reconnect needs its password again. Other encrypted formats must be unlocked in Disk Utility first.
+
+
 The list is discovered from macOS Disk Arbitration and I/O Registry metadata. Drive names and IDs are not hardcoded; volume UUIDs identify drives even if macOS changes their disk numbers. Only currently connected user drives are shown, including connected drives that are unmounted. Disconnected history and EFI system partitions do not become dashboard cards.
 
 **Unmounting does not cut USB power or guarantee that a hard disk stops spinning.** It removes filesystem access and lets the enclosure idle where supported. The USB device stays registered so it can be remounted remotely. A busy drive returns an error; the app never force-unmounts, formats, or ejects it. Internal disks and protected system mount points are excluded.
 
 Mount/unmount choices are saved by volume UUID and reapplied to connected drives when the dashboard starts after login. Startup retries briefly allow time for disks to appear; busy volumes are never forced. macOS may mount a drive again on a later USB reconnect. Actual power-off requires support from the enclosure or an individually switched USB hub.
+
+<details>
+<summary>Encrypted drive unlock prompt</summary>
+
+<img src="docs/screenshots/encrypted-unlock.jpg" alt="Encrypted APFS unlock prompt with an empty password field" width="640">
+
+</details>
 
 ## Low-load monitoring and restart behavior
 
@@ -165,9 +175,7 @@ The notifier does not push into Mac Control. Existing controls continue to work
 when the notifier is unavailable, and its administrator token never reaches the
 browser. Finder progress requires the separate observer app's Accessibility
 permission; no duplicate Mac progress window is opened.
-Each active copy shows Finder's overall progress with current-file rows below it.
-Finder file percentages are estimates from observed write positions; unavailable
-details remain unknown. Completed jobs and synthetic tests are hidden from this view.
+Each active copy shows its name, overall percentage, transferred bytes/time remaining, and a current filename when available. Empty file sections and Finder navigation/sidebar entries are hidden. Completed jobs and synthetic tests are excluded.
 
 Read the [integration guide](docs/integrations/mac-control.md) for configuration,
 request direction, polling, authentication, exposed endpoints and limitations.
@@ -185,9 +193,11 @@ does not install it or enable iPhone push provisioning.
 The server uses Python's standard library. Native Objective-C helpers use Foundation, AppKit, IOKit/AppleSMC, CoreAudio, ApplicationServices, and Disk Arbitration. The frontend is plain HTML, CSS, JavaScript, and SVG; no external assets or CDN are required.
 
 ```sh
-python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py test_notifier_bridge.py
+python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py test_notifier_bridge.py test_encrypted_drives.py
 ```
 
-The 111 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, viewer-driven monitoring, and notifier bridge authentication/fallback behavior. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
+The 119 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, viewer-driven monitoring, and notifier bridge authentication/fallback behavior. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
 
 See [implementation and maintenance details](docs/REFERENCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+Copy progress shows only active copy names, overall percentage, transferred bytes/time remaining, and a current filename when available. Finder navigation/sidebar entries and empty per-file placeholders are hidden. Slider titles, percentages, and On/Off buttons use separate layout cells at every card width.
