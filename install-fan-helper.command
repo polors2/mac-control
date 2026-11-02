@@ -3,7 +3,7 @@ set -eu
 cd -- "${0:A:h}"
 mkdir -p .runtime
 chmod 700 .runtime
-print 'Building the fan helper. It supports Apple Auto, bounded per-fan Constant RPMs, firmware maximum, and a 50–85°C CPU target.'
+print 'Building the fan helper. It supports Apple Auto, bounded per-fan Constant RPMs, firmware maximum, and a predictive 50–85°C CPU target.'
 if [[ "${MAC_CONTROL_PREBUILT:-0}" != 1 ]]; then
     /usr/bin/clang -fobjc-arc -O2 -framework Foundation -framework IOKit native/fans.m -o .runtime/fans
 fi
@@ -43,7 +43,7 @@ from fans import FanController
 previous = json.loads(Path('.runtime/fan-before-install.json').read_text())
 client = FanController()
 for _ in range(30):
-    if client.status(force=True).get('version', 0) >= 3: break
+    if client.status(force=True).get('version', 0) >= 4: break
     time.sleep(.2)
 else: raise SystemExit('The new fan helper did not start. Check the host Mac.')
 mode = previous.get('mode')

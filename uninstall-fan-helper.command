@@ -7,4 +7,5 @@ if [[ -x /Library/PrivilegedHelperTools/local.maccontrol.fans ]]; then
 fi
 sudo /bin/launchctl bootout system/local.maccontrol.fans 2>/dev/null || true
 sudo /bin/rm -f /Library/LaunchDaemons/local.maccontrol.fans.plist /Library/PrivilegedHelperTools/local.maccontrol.fans /var/run/local.maccontrol.fans.sock
+sudo /bin/rm -f /var/db/local.maccontrol/fan-learning.json
 print 'Fan helper removed. Apple manages fan speed.'

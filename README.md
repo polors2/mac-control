@@ -12,7 +12,7 @@ I wanted to keep my Mac offsite as a dev box keeping MacOS light and managing on
 - **Built-in keyboard and trackpad:** separate input switches. External keyboards, mice, and remote input remain available. Both internal inputs start **On** after a Mac reboot or input-helper restart.
 - **Fans and temperatures:** prominent CPU, Intel GPU, and AMD GPU readings with four cooling modes.
 - **USB storage:** connected, formatted external USB drives appear dynamically. Each has a Mounted/Unmounted button; disconnected drives remain identified. Detection refreshes about every ten seconds while the page is visible.
-- **Live graphs:** CPU utilization, separate Intel/AMD GPU activity, and upload/download rates with two minutes of history.
+- **Live graphs:** CPU utilization, separate Intel/AMD GPU activity, and upload/download rates with two minutes of history. Click or tap a block for a larger live chart with current, average, and peak readings.
 - **Persistent background service:** starts at user login, recovers after a crash, and continues when the browser, Terminal, or VNC disconnects.
 - **Local password:** choose your own password on installation; Remember this device keeps a session for 30 days. There is no default password.
 
@@ -21,7 +21,7 @@ I wanted to keep my Mac offsite as a dev box keeping MacOS light and managing on
 Requirements:
 
 - macOS **13 or later** and Apple Command Line Tools.
-- A normal Mac login with administrator access for installing the two privileged helpers.
+- A normal Mac login with administrator access for installing the fan, input, and graphics helpers.
 - Supported hardware. Native fan/input interfaces have been verified on an **Intel MacBook Pro**; support on other Macs depends on the interfaces they expose.
 
 Clone this repository, open Terminal in its folder, and run:
@@ -34,7 +34,7 @@ The installer:
 
 1. Builds and checks every native helper before changing running services.
 2. Prompts for a dashboard password only on first setup.
-3. Installs or updates the fan and input helpers, requesting administrator authentication when needed.
+3. Installs or updates the fan, input, and graphics helpers, requesting administrator authentication when needed.
 4. Deploys the dashboard and enables its persistent launchd service.
 5. Guides the required macOS privacy approvals and opens the dashboard.
 
@@ -67,11 +67,13 @@ These approvals require your clicks in macOS. They are not silently granted. The
 
 The **Network** button shows the host's local addresses. Sign in with the dashboard password you chose. The devices need to be able to reach each other on the LAN; guest Wi-Fi isolation, firewall settings, or browser local-network permissions may affect access.
 
-## Compact control center
+## Dashboard layout
 
-Live CPU, Intel GPU, AMD GPU, and network graphs sit at the top. Small display and sound tiles replace the large cards; keyboard backlight and automatic brightness live inside Built-in Inputs. Desktop shows the controls, cooling, and drives together. Mobile uses Controls, Inputs, Fans & temps, and USB drives tabs beneath the graphs. Cards stay compressed by default and size themselves to their content. Target/Constant fields and extra drives grow only the panel that needs them; no empty height is reserved. The dashboard stays within the browser viewport; smaller windows or long lists can scroll within the panel area. Hidden/closed pages still stop graph sampling.
+Live CPU, Intel GPU, AMD GPU, RAM, and network graphs sit above power and energy. The dashboard uses a 16px body size, 14px secondary text and chart labels, larger headings and readings, and controls at least 44px tall. Charts draw at their displayed dimensions so labels remain readable at normal zoom. The dashboard fills the available width, uses content-sized cards, and keeps the desktop panels side by side down to laptop widths. Cards reflow into fewer columns on smaller screens. Main content scrolls below the header without a visible scroll track; wheel, touch, and keyboard scrolling remain available. Desktop shows controls, cooling, and drives together; mobile uses Controls, Inputs, Fans & temps, and USB drives tabs. Keyboard backlight and automatic brightness live inside Built-in Inputs. Hidden/closed pages still stop CPU/GPU/network graph sampling.
 
 ## Persistent Display Off
+
+**Graphics mode:** the header’s **Auto / Intel / AMD** selector reads the current macOS graphics policy. The dedicated GPU helper needs one administrator installation with `install-graphics-helper.command` (also included in `install.command`). After that, switching never prompts, including from another device. Auto enables automatic switching, Intel requests integrated graphics, and AMD requests discrete graphics. The setting applies on battery and AC power and is persisted by macOS. External displays require the discrete GPU. The selector confirms the saved policy, rather than which GPU each application is rendering with. Temporary status-read failures leave all three actions available, including Auto for recovery. The root-owned helper accepts only status and these three fixed modes over a private socket restricted to the installing user and root; it never runs browser-provided shell commands. Installing or restarting it preserves the current GPU policy and does not restart the fan/input helpers. `uninstall-graphics-helper.command` removes it while keeping the current policy.
 
 **Display sleep** provides explicit **Sleep** and **Wake** actions and saves the resulting choice. It is a separate saved control that requests actual display sleep while the Mac and dashboard keep running. It restores its On or Off choice after service restart and after a reboot followed by user login, with no page open. While enabled, a tiny display-only helper reapplies sleep if another app or remote session wakes the display. Turning it Off releases that helper, wakes the display, and restores the previous positive brightness. A nonzero brightness command or preset also wakes the display and clears the saved sleep choice. macOS display sleep can affect attached displays as well. It does not apply at the FileVault or login screen before the user session starts. No administrator helper update is needed.
 
@@ -90,7 +92,7 @@ This helper does not collect CPU/GPU/network data, control external displays, or
 | **Target** | Shows a CPU-temperature field and curve. Accepts 50–85°C; saves when you leave the field or press Enter. |
 | **Max** | Sets each fan to its own firmware maximum. |
 
-Auto and Max hide the editable fan fields. Target cooling uses a bounded adaptive curve, ramps up quickly, and backs off gently. An unavailable CPU sensor or failed target write returns management to Apple. The target is a cooling goal; workload and room temperature determine what can be reached.
+Auto and Max hide the editable fan fields. With fan helper version 4, Target cooling learns a thermal model from logged temperature, CPU load, and actual fan response. It forecasts 20 seconds ahead and aims 2–5°C below the target, ramps up quickly, and backs off gently. Learning is checkpointed independently of the raw logs, so automatic cleanup of records older than 24 hours preserves it across restarts. Older helpers show an update link for predictive Target. An unavailable CPU sensor, missing fan feedback, or failed target write returns management to Apple. The target is a cooling goal; workload and room temperature determine what can be reached.
 
 ![Constant mode with separate fan sliders](docs/screenshots/fans-constant.jpg)
 
@@ -122,11 +124,17 @@ Mount/unmount choices are saved by volume UUID and reapplied to connected drives
 
 </details>
 
+## Power and energy
+
+Power & energy shows the current whole-Mac draw in watts, a selectable 1h/12h/24h power graph, and cumulative energy in Wh/kWh since 12:00am **Asia/Manila**. Each power card expands into the same animated, live detail view as the activity charts. Power history ranges can be changed inside the expanded view. The Daily log opens a 90-day line chart with logged-total and coverage summaries. Daily values, recorded time, and average draw remain available in an expandable table. Missing days are gaps; today is an open point because its total is still increasing. This is the Mac's internal SMC System Total sensor, so it excludes charger losses and is not a wall-outlet measurement.
+
+Logging starts with this update; earlier usage cannot be recovered. The service samples every ten seconds without requiring an open dashboard, keeps 24 hours of detailed readings and up to 90 calendar days of daily totals in private `.runtime/power.sqlite3`, and preserves them across restarts. Energy uses trapezoidal integration over valid intervals, split at Manila midnight. Sleep, unavailable sensors, and service downtime leave gaps; totals include only recorded periods. The daily table shows recorded time so partial days are clear.
+
 ## Low-load monitoring and restart behavior
 
-All visible dashboards share one sampler, taking readings every two seconds. Graph sampling pauses when every dashboard is hidden or closed; a lost viewer lease expires within five seconds. Drive and input status refresh only while the page is visible. There are no idle graph-sampling subprocesses when nobody is viewing the dashboard.
+All visible dashboards share one sampler, taking readings every two seconds. Graph sampling pauses when every dashboard is hidden or closed; a lost viewer lease expires within five seconds. Drive and input status refresh only while the page is visible. CPU/GPU/network sampling stops when nobody is viewing the dashboard. A separate power logger reads only the SMC system-total power sensor every ten seconds, including with the dashboard closed.
 
-**Target mode continues its lightweight CPU-temperature regulation with the page closed.** Auto, Constant, and Max block waiting for commands when idle. Chosen fan modes and input Off states survive a VNC disconnect while their helpers continue running.
+**Target mode continues its lightweight CPU-temperature regulation with the page closed.** Auto, Constant, and Max wait for commands when idle, waking once per minute for log retention without sampling hardware. Chosen fan modes and input Off states survive a VNC disconnect while their helpers continue running.
 
 Settings are saved in private runtime files and restored automatically after a service restart or Mac reboot followed by user login: display brightness (including Off), keyboard backlight and its automatic mode, volume/mute, selected fan mode with its Target temperature or Constant RPMs, and connected USB mount choices. The fan helper initially starts in Apple Auto; the dashboard reapplies the saved selection after login. Both built-in inputs always start On after a Mac/helper restart, as intended. Passwords and remembered sign-ins are retained. Updates preserve the deployed settings.
 
@@ -148,15 +156,33 @@ It preserves your password, remembered sessions, and saved control levels. Uncha
 python3 service.py status
 python3 service.py stop
 python3 service.py start
+python3 service.py restart    # Restart only the dashboard; keep privileged helpers running
 python3 service.py uninstall  # Remove dashboard automatic startup; retain saved data
 python3 password.py           # Change the password locally and revoke remembered sessions
 ```
 
 `enable-inputs.command` restores both built-in inputs. `restart-input-helper.command` restarts their helper without another administrator prompt. The individual fan/input installers and uninstallers are also included for maintenance; `service.py uninstall` does not remove those separate privileged helpers.
 
+### Run directly from a checkout
+
+An existing service can also be migrated to run directly from its repository,
+with saved state and logs in the checkout's gitignored `.runtime/` directory.
+`python3 service.py status` reports the active source and runtime paths. After
+migration, start/stop/restart, password changes, and `./install.command` all follow
+the installed checkout; updates do not redeploy it to Application Support.
+Python changes need `python3 service.py restart`; native changes use the installer.
+The checkout must stay at its installed path for automatic startup to work.
+
+For a **new installation only**, `python3 service.py install --in-place` registers
+this checkout after its helpers and password have been prepared. It refuses to
+relocate an existing service without a state migration. A migration requires a
+private backup, native preflight, a brief dashboard restart, and preservation of
+the existing `.runtime/` files and macOS permission-approved helper paths. The
+fan/input daemons remain installed in their standard system locations.
+
 ## Local data and access
 
-The deployed app is stored in `~/Library/Application Support/Mac Control`. Password hashes, hashed session tokens, saved levels, remembered drive metadata, logs, and compiled helpers live in its private `.runtime/` directory. Runtime data, local environment files, and compiled helpers are excluded from Git. No actual device credentials or default password are included in this repository.
+By default, the deployed app is stored in `~/Library/Application Support/Mac Control`; a checkout installation uses the repository itself. Password hashes, hashed session tokens, saved levels, remembered drive metadata, logs, and compiled helpers live in the active installation's private `.runtime/` directory. Runtime data, local migration backups (`.local-backups/`), local environment files, and compiled helpers are excluded from Git. No actual device credentials or default password are included in this repository.
 
 The service listens on IPv4 port **8765**, accepts local/private network clients at known host addresses, checks request origins, requires authentication for controls, and uses revocable HttpOnly/SameSite cookies. It exposes fixed hardware operations rather than an arbitrary shell or SMC-write endpoint. The privileged helpers use private Unix sockets restricted to the installing user and root.
 
@@ -193,10 +219,10 @@ does not install it or enable iPhone push provisioning.
 The server uses Python's standard library. Native Objective-C helpers use Foundation, AppKit, IOKit/AppleSMC, CoreAudio, ApplicationServices, and Disk Arbitration. The frontend is plain HTML, CSS, JavaScript, and SVG; no external assets or CDN are required.
 
 ```sh
-python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py test_notifier_bridge.py test_encrypted_drives.py test_copy_progress.py
+python3 -m unittest discover
 ```
 
-The 126 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, viewer-driven monitoring, and notifier bridge authentication/fallback behavior. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
+The checks cover authentication, preserved credentials, safe installer ordering, installed service paths, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, viewer-driven monitoring, and notifier bridge authentication/fallback behavior. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
 
 See [implementation and maintenance details](docs/REFERENCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 

@@ -1,8 +1,14 @@
-/* Compact, viewport-sized control center. No continuous decorative animation. */
+/* Responsive control center. No continuous decorative animation. */
+.control-center .graphics-toggle{display:flex;align-items:center;flex-shrink:0;gap:2px;padding:3px;border:1px solid #cbd4d0;border-radius:20px;background:#ffffff60;margin-right:auto}
+.control-center .graphics-toggle button{border:0;border-radius:16px;background:transparent;color:#738279;font-size:10px;font-weight:550;min-height:27px;min-width:45px;padding:5px 10px}
+.control-center .graphics-toggle button[aria-pressed=true]{background:#fff;color:#344b37;box-shadow:0 1px 4px #253b3020}
+.control-center .graphics-toggle[aria-busy=true]{opacity:.65}
+@media(max-width:700px){.control-center .topbar{gap:8px}.control-center .graphics-toggle button{min-width:36px;min-height:27px;padding:4px 7px;font-size:9px}.control-center .header-actions .network-button>span:not([data-icon]){display:none}.control-center .header-actions .network-button{padding:6px}.control-center .header-actions .connection{display:none}}
+@media(max-width:380px){.control-center .topbar .brand{font-size:15px;gap:6px}.control-center .topbar .brand-mark{padding:5px}.control-center .topbar .header-actions{gap:4px}.control-center .graphics-toggle button{min-width:32px;padding:4px 5px}}
 body.control-center{--ink:#26302e;--line:#d4ddd7;background:radial-gradient(ellipse at top left,#dae6e9,transparent 65%),linear-gradient(120deg,#edf0e9,#e4e9ec);height:100dvh;overflow:hidden;color:var(--ink)}
 .control-center .app-shell{max-width:1120px;height:100%;padding:0 20px;margin:auto;display:flex;flex-direction:column}
 .control-center .topbar{height:54px;min-height:54px;border-bottom:0;gap:12px}.control-center .brand{font-size:19px;gap:9px}.control-center .brand-mark{padding:7px;grid-template-columns:repeat(2,6px);gap:3px;border-radius:10px}.control-center .brand-mark i{width:6px;height:6px}.control-center .header-actions{gap:12px}.control-center .connection{font-size:10px}.control-center .network-button{padding:7px 10px;min-height:30px;font-size:10px;background:#ffffff60;border-color:#cbd4d0}.control-center .network-button svg{width:15px;height:15px}.control-center .logout-button{width:29px;height:29px}.control-center main{padding:0 0 12px;min-height:0;flex:1;display:flex;flex-direction:column;gap:12px}.control-center footer{display:none}
-.control-center .section-heading{margin:0 0 9px;gap:8px;min-height:16px}.control-center .section-heading h2,.control-center .controls-section h1{font:600 12px/1.3 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.1px;margin:0}.control-center .section-meta{font-size:7px;letter-spacing:.6px;color:#7b8980;text-align:right}.control-center .stats-section{margin:0;flex-shrink:0}.control-center .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.control-center .stat-card{min-height:0;height:clamp(100px,18vh,142px);padding:10px 12px 6px;border-radius:16px;background:#ffffff90;border:1px solid #fff9;display:grid;grid-template-rows:18px 27px minmax(0,1fr);position:relative;overflow:hidden}.control-center .stat-heading{margin:0;gap:6px}.control-center .stat-heading h3{font-size:10px;white-space:nowrap}.control-center .stat-icon{width:13px;height:13px}.control-center .stat-icon svg{width:13px;height:13px}.control-center .stat-badge,.control-center .stat-detail,.control-center .chart-time,.control-center .stats-footnote{display:none}.control-center .stat-value{margin:0;gap:3px;align-items:baseline}.control-center .stat-value output{font-size:23px;line-height:1.1;letter-spacing:-.5px}.control-center .stat-value>span{font-size:10px}.control-center .stat-chart{position:static;width:100%;height:100%;min-height:0;margin:0}.control-center .stats-status{font-size:8px}.control-center .network-values{margin:0;gap:10px;align-items:baseline;display:flex}.control-center .network-values strong{font-size:11px;line-height:1.2}.control-center .network-direction{font-size:6px;letter-spacing:0;margin-bottom:1px}.control-center .download-dot,.control-center .upload-dot{display:none}
+.control-center .section-heading{margin:0 0 9px;gap:8px;min-height:16px}.control-center .section-heading h2,.control-center .controls-section h1{font:600 12px/1.3 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.1px;margin:0}.control-center .section-meta{font-size:7px;letter-spacing:.6px;color:#7b8980;text-align:right}.control-center .stats-section{margin:0;flex-shrink:0}.control-center .stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.control-center .stat-card{min-height:0;height:clamp(100px,18vh,142px);padding:10px 12px 6px;border-radius:16px;background:#ffffff90;border:1px solid #fff9;display:grid;grid-template-rows:18px 27px minmax(0,1fr);position:relative;overflow:hidden}.control-center .stat-heading{margin:0;gap:6px}.control-center .stat-heading h3{font-size:10px;white-space:nowrap}.control-center .stat-icon{width:13px;height:13px}.control-center .stat-icon svg{width:13px;height:13px}.control-center .stat-badge,.control-center .stat-detail,.control-center .chart-time,.control-center .stats-footnote{display:none}.control-center .stat-value{margin:0;gap:3px;align-items:baseline}.control-center .stat-value output{font-size:23px;line-height:1.1;letter-spacing:-.5px}.control-center .stat-value>span{font-size:10px}.control-center .stat-chart{position:static;width:100%;height:100%;min-height:0;margin:0}.control-center .stats-status{font-size:8px}.control-center .network-values{margin:0;gap:10px;align-items:baseline;display:flex}.control-center .network-values strong{font-size:11px;line-height:1.2}.control-center .network-direction{font-size:6px;letter-spacing:0;margin-bottom:1px}.control-center .download-dot,.control-center .upload-dot{display:none}
 .control-center .panel-tabs{display:none}.control-center .dashboard-panels{flex:1;min-height:0;display:grid;grid-template-columns:1.12fr 1fr;grid-template-rows:minmax(0,1.3fr) minmax(0,.8fr);gap:12px}.control-center .dashboard-pane{min-height:0;min-width:0;border:1px solid #fff9;border-radius:20px;background:#ffffff80;padding:14px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}.control-center .controls-pane{grid-row:1/3;display:flex;flex-direction:column;gap:12px}.control-center .cooling-pane{grid-column:2;grid-row:1}.control-center .drives-pane{grid-column:2;grid-row:2}
 .control-center .controls-grid{grid-template-columns:1fr 1fr;gap:8px}.control-center .control-card{display:grid;grid-template-columns:1fr auto;gap:3px 6px;padding:11px 12px 7px;border-radius:15px;background:#f9fbf6a0;border:1px solid #d5ded4;position:relative}.control-center .card-top{grid-column:1/3;grid-row:1;display:flex;gap:6px;margin:0}.control-center .control-icon{width:21px;height:21px;border-radius:7px;background:none;padding:0}.control-center .control-icon svg{width:18px;height:18px}.control-center .card-index{font-size:7px;letter-spacing:.4px;display:block}.control-center .card-heading{grid-column:1;grid-row:2;margin:5px 0 2px}.control-center .card-heading h3{font-size:12px;margin:0}.control-center .control-description,.control-center .level-art{display:none}.control-center .value-row{grid-column:2;grid-row:2;margin:0;height:auto;gap:2px;align-items:baseline;justify-content:flex-end}.control-center .value-row output{font-size:22px;line-height:1.1;letter-spacing:-.5px}.control-center .value-unit{font-size:10px}.control-center .range-wrap{grid-column:1/3;margin:4px 0 0}.control-center input[type=range]{height:6px;margin:7px 0}.control-center input[type=range]::-webkit-slider-thumb{width:16px;height:16px}.control-center .range-labels{grid-column:1/3;min-height:18px;margin:0;gap:4px}.control-center .range-labels>span{font-size:7px;line-height:1.1}.control-center .range-labels button{padding:2px;min-width:24px}.control-center .range-labels svg{width:12px;height:12px}.control-center .power-toggle,.control-center .state-toggle{min-width:48px;min-height:29px;font-size:10px;padding:5px 9px;gap:5px;border-radius:20px}.control-center .power-toggle svg{width:12px;height:12px}.control-center .display-power-row{display:flex;align-items:center;gap:9px;margin-top:8px;padding:9px 12px;border-radius:14px;background:#f9fbf6a0;border:1px solid #d5ded4}.control-center .display-power-symbol{display:flex;color:#61775a}.control-center .display-power-symbol svg{width:18px;height:18px}.control-center .display-power-row>div{flex:1}.control-center .display-power-row h3{font-size:11px;margin:0 0 3px}.control-center .display-power-row p{font-size:8px;color:#839080;margin:0;line-height:1.3}
 .control-center .inputs-section{margin:0}.control-center .inputs-section .section-heading{margin-bottom:8px}.control-center .input-grid{grid-template-columns:1fr 1fr;gap:8px}.control-center .input-card{padding:9px;gap:7px;border-radius:14px;background:#f9fbf6a0;border:1px solid #d5ded4;flex-wrap:wrap}.control-center .input-symbol svg{width:17px;height:17px}.control-center .input-copy h3{font-size:10px;margin:0}.control-center .input-copy p{display:none}.control-center .input-copy{min-width:70px}.control-center .input-card .state-toggle{margin-left:auto;min-width:41px}.control-center .backlight-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:8px}.control-center .keyboard-light{border-radius:14px;padding:8px 10px 5px;grid-template-columns:minmax(0,1fr) auto;gap:0 8px}.control-center .keyboard-light .card-top{grid-column:2;grid-row:1/3}.control-center .keyboard-light .card-top>.control-icon,.control-center .keyboard-light .card-index{display:none}.control-center .keyboard-light .card-heading{grid-column:1;grid-row:1;margin:0}.control-center .keyboard-light .value-row{grid-column:1;grid-row:2;position:absolute;right:61px;top:7px}.control-center .keyboard-light .value-row output{font-size:12px}.control-center .keyboard-light .value-unit{font-size:8px}.control-center .keyboard-light .range-wrap{grid-column:1/3;margin-top:5px}.control-center .keyboard-light .range-labels{display:none}.control-center .keyboard-light .card-heading h3{font-size:10px}.control-center .auto-panel{padding:8px 10px;border-radius:14px;background:#f9fbf6a0;gap:10px;flex-direction:column;justify-content:space-between}.control-center .auto-panel h3{font-size:9px;margin:0}.control-center .auto-panel p,.control-center .inputs-bottom>p{display:none}.control-center .inputs-bottom{margin-top:3px;gap:4px}.control-center .inputs-permission-note{font-size:9px;margin:4px 0}.control-center .inputs-permission-note[hidden]{display:none}
@@ -10,7 +16,7 @@ body.control-center{--ink:#26302e;--line:#d4ddd7;background:radial-gradient(elli
 .control-center .fan-section{display:flex;flex-direction:column;gap:13px;margin:0;padding:0;background:none;border:0;border-radius:0}.control-center .thermal-readings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;padding:0}.control-center .thermal-caption{font-size:6px;gap:4px;letter-spacing:0}.control-center .thermal-caption svg{width:12px;height:12px}.control-center .thermal-reading strong{font-size:32px;letter-spacing:-1px;margin:8px 0 4px;line-height:1}.control-center .thermal-sensor{font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.control-center .fan-control-box{border:0;padding:0}.control-center .fan-symbol{display:none}.control-center .fan-heading h2{font-size:12px;margin:0 0 3px}.control-center .fan-heading p{font-size:8px;line-height:1.3;margin:0}.control-center .fan-control-box .fan-mode-buttons{margin-top:10px;gap:5px}.control-center .fan-mode-buttons button{padding:7px 6px;border-radius:12px;gap:4px;min-height:35px}.control-center .fan-mode-buttons button>span:first-child{display:none}.control-center .fan-mode-buttons button>span{font-size:10px}.control-center .fan-mode-buttons small{display:none}.control-center .target-controls{margin-top:10px;gap:7px}.control-center .target-input-wrap input{font-size:14px;padding:6px;width:54px}.control-center .target-range-note{font-size:7px}.control-center .target-curve-preview{margin-top:6px;gap:7px;font-size:7px}.control-center .target-curve-preview svg{height:20px;width:75px}.control-center .constant-controls{margin-top:8px}.control-center .constant-fan-row{margin:0 0 6px}.control-center .constant-fan-heading{font-size:9px}.control-center .constant-fan-heading output{font-size:10px}.control-center .constant-fan-limits{font-size:7px;margin:0}.control-center .constant-controls p{font-size:7px;margin:2px 0 0}.control-center .fan-section>.fan-bottom{display:flex;flex-wrap:wrap;margin:0;padding:9px 0 0;border-top:1px solid #d5ded4;gap:6px}.control-center .fan-readings{gap:15px;flex:1}.control-center .fan-reading{gap:3px}.control-center .fan-reading>span{font-size:8px}.control-center .fan-reading strong{font-size:10px}.control-center .fan-reading small{font-size:7px}.control-center .fan-setup-button{font-size:8px;padding:2px}
 .control-center .drives-section{margin:0;padding:0}.control-center .drive-grid{grid-template-columns:1fr;gap:7px}.control-center .drive-card{padding:10px 11px;border-radius:13px;background:#f9fbf6a0}.control-center .drive-top{gap:8px}.control-center .drive-icon{width:28px;height:28px;border-radius:9px}.control-center .drive-icon svg{width:17px;height:17px}.control-center .drive-heading h3{font-size:11px;margin:0 0 4px}.control-center .drive-heading p{font-size:7px}.control-center .drive-mount-button{min-width:77px;font-size:9px;min-height:29px}.control-center .drive-state{margin-top:6px;padding-top:6px;gap:5px;font-size:7px}.control-center .drive-state i{width:4px;height:4px}.control-center .drives-note{font-size:7px;line-height:1.5;margin:8px 0 0}.control-center .drive-empty{font-size:10px;padding:12px}
 .control-center [hidden]{display:none!important}.control-center .toast{bottom:10px;font-size:11px;padding:10px 14px}.control-center dialog{max-height:calc(100dvh - 24px);padding:25px}.control-center .password-input{text-transform:none}
-@media(max-width:700px){.control-center .app-shell{padding:0 12px}.control-center .topbar{height:47px;min-height:47px}.control-center .brand{font-size:17px}.control-center .connection{font-size:0}.control-center .header-actions{gap:7px}.control-center .network-button{font-size:9px;min-height:28px;padding:6px 9px}.control-center .network-button .arrow{display:none}.control-center main{gap:8px;padding-bottom:max(9px,env(safe-area-inset-bottom))}.control-center .stats-section .section-heading{margin-bottom:6px}.control-center .stats-grid{gap:5px;grid-template-columns:repeat(4,minmax(0,1fr))}.control-center .stat-card{height:105px;border-radius:13px;padding:8px 7px 4px;grid-template-rows:16px 25px minmax(0,1fr)}.control-center .stat-heading{gap:3px}.control-center .stat-heading h3{font-size:8px}.control-center .stat-icon{display:none}.control-center .stat-value output{font-size:21px}.control-center .network-values{display:block}.control-center .network-values>div{display:flex;gap:3px;align-items:baseline}.control-center .network-direction{font-size:0}.control-center .network-direction:before{content:'↓';font-size:7px}.control-center .network-values>div+div .network-direction:before{content:'↑'}.control-center .network-values strong{font-size:8px}.control-center .panel-tabs{display:flex;border-radius:20px;background:#d3dcd585;padding:3px;gap:3px;flex-shrink:0}.control-center .panel-tabs button{flex:1;border:0;background:none;color:#78867c;border-radius:18px;font-size:10px;font-weight:550;padding:8px 5px}.control-center .panel-tabs button[aria-selected=true]{background:#fff;color:#283c30;box-shadow:0 1px 4px #253b3020}.control-center .dashboard-panels{display:block;overflow:hidden}.control-center .dashboard-pane{height:100%;padding:12px;border-radius:18px;display:none}.control-center[data-panel=controls] .controls-pane{display:flex;gap:10px}.control-center[data-panel=cooling] .cooling-pane,.control-center[data-panel=drives] .drives-pane{display:block}.control-center .controls-section .section-heading{margin-bottom:7px}.control-center .controls-section h1{font-size:11px}.control-center .controls-section #sync-label{font-size:6px;max-width:105px}.control-center .control-card{padding:9px 10px 5px}.control-center .card-index{font-size:6px}.control-center .power-toggle{min-width:43px;min-height:27px;padding:4px 7px;gap:4px}.control-center .power-toggle svg{width:11px;height:11px}.control-center .display-power-row{padding:8px 10px;margin-top:7px}.control-center .display-power-row h3{font-size:10px}.control-center .display-power-row p{font-size:7px}.control-center .inputs-section .section-heading{margin-bottom:6px}.control-center .inputs-section .section-meta{font-size:6px}.control-center .input-card{padding:8px;gap:5px}.control-center .input-copy{min-width:0}.control-center .input-copy h3{font-size:9px}.control-center .input-symbol{display:none}.control-center .input-card .state-toggle{font-size:9px;min-width:35px;padding:4px 7px;min-height:28px}.control-center .keyboard-light{padding:7px 9px 3px}.control-center .keyboard-light .value-row{top:6px;right:57px}.control-center .keyboard-light .card-heading h3{font-size:10px}.control-center .auto-panel{padding:6px 8px;gap:3px}.control-center .auto-panel .state-toggle{min-height:25px;padding:3px 7px;font-size:9px}.control-center .backlight-row{gap:7px;margin-top:6px}.control-center .touch-strip{padding:8px 10px;min-height:43px}.control-center .strip-help{left:36px;bottom:3px}.control-center .strip-copy h2{font-size:10px}.control-center .strip-icon{width:19px}.control-center .preset{min-height:29px;padding:5px}.control-center .preset>span:nth-child(2){font-size:8px}.control-center .thermal-reading strong{font-size:36px}.control-center .thermal-caption{font-size:7px}.control-center .fan-section{gap:19px}.control-center .fan-mode-buttons button{min-height:42px}.control-center .fan-mode-buttons button>span{font-size:11px}.control-center .fan-heading p{font-size:9px}.control-center .fan-reading strong{font-size:12px}.control-center .target-controls{gap:8px}.control-center .target-range-note{font-size:8px}.control-center .constant-fan-heading{font-size:11px}.control-center .constant-fan-row{margin-bottom:13px}.control-center .drive-card{padding:13px}.control-center .drive-heading h3{font-size:13px}.control-center .drive-heading p,.control-center .drive-state{font-size:9px}.control-center .drive-grid{gap:10px}.control-center .drive-mount-button{min-width:83px;min-height:35px;font-size:10px}}
+@media(max-width:700px){.control-center .app-shell{padding:0 12px}.control-center .topbar{height:47px;min-height:47px}.control-center .brand{font-size:17px}.control-center .connection{font-size:0}.control-center .header-actions{gap:7px}.control-center .network-button{font-size:9px;min-height:28px;padding:6px 9px}.control-center .network-button .arrow{display:none}.control-center main{gap:8px;padding-bottom:max(9px,env(safe-area-inset-bottom))}.control-center .stats-section .section-heading{margin-bottom:6px}.control-center .stats-grid{gap:5px;grid-template-columns:repeat(5,minmax(0,1fr))}.control-center .stat-card{height:105px;border-radius:13px;padding:8px 7px 4px;grid-template-rows:16px 25px minmax(0,1fr)}.control-center .stat-heading{gap:3px}.control-center .stat-heading h3{font-size:8px}.control-center .stat-icon{display:none}.control-center .stat-value output{font-size:21px}.control-center .network-values{display:block}.control-center .network-values>div{display:flex;gap:3px;align-items:baseline}.control-center .network-direction{font-size:0}.control-center .network-direction:before{content:'↓';font-size:7px}.control-center .network-values>div+div .network-direction:before{content:'↑'}.control-center .network-values strong{font-size:8px}.control-center .panel-tabs{display:flex;border-radius:20px;background:#d3dcd585;padding:3px;gap:3px;flex-shrink:0}.control-center .panel-tabs button{flex:1;border:0;background:none;color:#78867c;border-radius:18px;font-size:10px;font-weight:550;padding:8px 5px}.control-center .panel-tabs button[aria-selected=true]{background:#fff;color:#283c30;box-shadow:0 1px 4px #253b3020}.control-center .dashboard-panels{display:block;overflow:hidden}.control-center .dashboard-pane{height:100%;padding:12px;border-radius:18px;display:none}.control-center[data-panel=controls] .controls-pane{display:flex;gap:10px}.control-center[data-panel=cooling] .cooling-pane,.control-center[data-panel=drives] .drives-pane{display:block}.control-center .controls-section .section-heading{margin-bottom:7px}.control-center .controls-section h1{font-size:11px}.control-center .controls-section #sync-label{font-size:6px;max-width:105px}.control-center .control-card{padding:9px 10px 5px}.control-center .card-index{font-size:6px}.control-center .power-toggle{min-width:43px;min-height:27px;padding:4px 7px;gap:4px}.control-center .power-toggle svg{width:11px;height:11px}.control-center .display-power-row{padding:8px 10px;margin-top:7px}.control-center .display-power-row h3{font-size:10px}.control-center .display-power-row p{font-size:7px}.control-center .inputs-section .section-heading{margin-bottom:6px}.control-center .inputs-section .section-meta{font-size:6px}.control-center .input-card{padding:8px;gap:5px}.control-center .input-copy{min-width:0}.control-center .input-copy h3{font-size:9px}.control-center .input-symbol{display:none}.control-center .input-card .state-toggle{font-size:9px;min-width:35px;padding:4px 7px;min-height:28px}.control-center .keyboard-light{padding:7px 9px 3px}.control-center .keyboard-light .value-row{top:6px;right:57px}.control-center .keyboard-light .card-heading h3{font-size:10px}.control-center .auto-panel{padding:6px 8px;gap:3px}.control-center .auto-panel .state-toggle{min-height:25px;padding:3px 7px;font-size:9px}.control-center .backlight-row{gap:7px;margin-top:6px}.control-center .touch-strip{padding:8px 10px;min-height:43px}.control-center .strip-help{left:36px;bottom:3px}.control-center .strip-copy h2{font-size:10px}.control-center .strip-icon{width:19px}.control-center .preset{min-height:29px;padding:5px}.control-center .preset>span:nth-child(2){font-size:8px}.control-center .thermal-reading strong{font-size:36px}.control-center .thermal-caption{font-size:7px}.control-center .fan-section{gap:19px}.control-center .fan-mode-buttons button{min-height:42px}.control-center .fan-mode-buttons button>span{font-size:11px}.control-center .fan-heading p{font-size:9px}.control-center .fan-reading strong{font-size:12px}.control-center .target-controls{gap:8px}.control-center .target-range-note{font-size:8px}.control-center .constant-fan-heading{font-size:11px}.control-center .constant-fan-row{margin-bottom:13px}.control-center .drive-card{padding:13px}.control-center .drive-heading h3{font-size:13px}.control-center .drive-heading p,.control-center .drive-state{font-size:9px}.control-center .drive-grid{gap:10px}.control-center .drive-mount-button{min-width:83px;min-height:35px;font-size:10px}}
 @media(max-width:700px) and (max-height:700px){.control-center .stat-card{height:78px;grid-template-rows:14px 22px minmax(0,1fr)}.control-center .dashboard-pane{padding:10px}.control-center[data-panel=controls] .controls-pane{gap:8px}.control-center .section-heading{margin-bottom:5px}.control-center .display-power-row p{font-size:7px}.control-center .inputs-bottom{margin:0}}
 @media(prefers-reduced-motion:reduce){.control-center *{animation:none!important;transition:none!important}}
 @media(min-width:701px){.control-center .dashboard-panels{grid-template-rows:minmax(0,1fr) minmax(0,1fr)}.control-center .control-card:not(.keyboard-light){padding-top:10px;grid-template-rows:29px 21px 18px;gap:1px 6px}.control-center .control-card:not(.keyboard-light) .card-top{position:absolute;right:10px;top:10px;width:auto}.control-center .control-card:not(.keyboard-light) .card-top .control-icon,.control-center .control-card:not(.keyboard-light) .card-index{display:none}.control-center .control-card:not(.keyboard-light) .card-heading{grid-row:1;margin:6px 0 0}.control-center .control-card:not(.keyboard-light) .value-row{grid-row:1;margin:3px 55px 0 0}.control-center .control-card:not(.keyboard-light) .range-wrap{grid-row:2;margin:0}.control-center .control-card:not(.keyboard-light) .range-labels{grid-row:3}.control-center .controls-pane{gap:9px}}
@@ -48,3 +54,499 @@ body.control-center{--ink:#26302e;--line:#d4ddd7;background:radial-gradient(elli
 @container (max-width:190px){.control-center .level-header{grid-template-areas:"label label" "reading power"}.control-center .level-header h3{min-width:0;white-space:nowrap}.control-center .level-value{justify-content:flex-start}}
 @media(max-width:700px){.control-center .control-card:not(.keyboard-light) .range-labels{display:none}.control-center .control-card .range-wrap{margin-top:5px}.control-center .keyboard-light .level-header{grid-template-areas:"label reading power"}}
 @media(min-width:701px){.control-center .controls-pane{padding:12px;gap:7px}.control-center .controls-pane .section-heading{margin-bottom:6px}.control-center .control-card,.control-center .control-card:not(.keyboard-light),.control-center .keyboard-light{padding:8px 10px 5px}.control-center .control-card .range-wrap{margin-top:5px}.control-center .control-card .range-labels{margin-top:0;min-height:14px}.control-center .display-power-row{padding:7px 10px;margin-top:6px}.control-center .input-card{padding:7px 9px}.control-center .backlight-row{margin-top:6px}.control-center .touch-strip{min-height:40px;padding:6px 12px}.control-center .preset{min-height:28px}.control-center .auto-panel{padding:8px 10px}}
+
+/* Each activity tile opens a larger, live chart with keyboard/touch support. */
+.control-center .stat-card{position:relative}
+.control-center .stat-expand{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:inherit;background:transparent;cursor:zoom-in;display:flex;align-items:flex-start;justify-content:flex-end;padding:6px;color:#637b68}
+.control-center .stat-expand span{font-size:15px;line-height:1;opacity:.65}
+.control-center .stat-expand:hover{background:#7d9d7c0d}
+.control-center .stat-expand:focus-visible{outline:2px solid #718f5c;outline-offset:-3px}
+.control-center #activity-dialog{width:min(850px,calc(100vw - 24px));padding:28px;overflow:auto}
+.control-center #activity-dialog h2{font-size:30px;margin-bottom:10px}
+.control-center #activity-dialog .eyebrow{margin:0 36px 14px 0;line-height:1.6}
+.activity-values{display:flex;gap:28px;margin:12px 0 20px}
+.activity-values>div{flex:1;min-width:0}.activity-values h3{font-size:12px;margin:0 0 10px}
+.activity-values p{display:flex;justify-content:space-between;gap:10px;font-size:12px;margin:7px 0;color:#839080}
+.activity-values strong{font-variant-numeric:tabular-nums;color:#435d46}
+.activity-summary.has-memory{display:grid;grid-template-columns:1.1fr 1.2fr;gap:24px;align-items:center;margin:16px 0 20px}
+.activity-summary.has-memory .activity-values{margin:0;gap:20px}
+.memory-available{display:grid;grid-template-columns:minmax(0,1fr) 82px;align-items:center;gap:12px;padding:20px;border:1px solid #d9e5d6;border-radius:18px;background:linear-gradient(135deg,#edf5e5,#f3f8ef);min-width:0}
+.memory-available p{margin:0}
+.memory-available .memory-available-label{font-size:9px;font-weight:600;letter-spacing:1.5px;color:#658052;margin-bottom:8px}
+.memory-available output{display:block;font-size:clamp(34px,4vw,49px);line-height:1.1;letter-spacing:-2px;color:#3c5c36;white-space:nowrap}
+#memory-available-total{font-size:10px;color:#7b8d73;margin-top:6px}
+.memory-available-ring{display:grid;place-items:center;width:82px;height:82px;border-radius:50%;background:conic-gradient(from -90deg,#87a96b var(--memory-free,0%),#d8e4e7 0);transform:rotate(0deg)}
+.memory-available-ring>div{display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:#f1f7eb}
+.memory-available-ring strong{font-size:20px;font-weight:500;letter-spacing:-.6px;color:#4e7041;font-variant-numeric:tabular-nums}
+.memory-available-ring span{font-size:9px;color:#819474;margin-top:2px}
+.memory-available-ring.is-unavailable{background:#e0e7dc}
+.memory-available .memory-available-note{grid-column:1/-1;font-size:9px;color:#829079}
+@media(max-width:700px){.activity-summary.has-memory{grid-template-columns:1fr;gap:18px}.memory-available{grid-template-columns:minmax(0,1fr) 82px;padding:18px}.memory-available output{font-size:46px}.activity-summary.has-memory .activity-values{gap:20px}}
+.activity-chart{stroke:none;display:block;width:100%;height:auto;aspect-ratio:320/114}
+.activity-time{display:flex;justify-content:space-between;padding-right:9%;font-size:10px;color:#839080;margin-top:5px}
+@media(max-width:700px){.control-center #activity-dialog{padding:23px 18px}.activity-values{gap:20px}.activity-values p{font-size:11px}}
+
+/* The selected graph becomes the detail graph, with a soft focus shift behind it. */
+.control-center .ram-stat .stat-icon{color:#6e9fb7}
+.control-center .ram-overview-values{display:flex;align-items:baseline;gap:5px;min-width:0}
+.control-center .ram-free-reading{display:flex;align-items:baseline;gap:4px;white-space:nowrap}
+.control-center .ram-free-reading output{font-size:26px;line-height:1;letter-spacing:-.7px;color:#4e7041}
+.control-center .ram-free-reading>span{font-size:9px;color:#72856a}
+.control-center .ram-utilization{margin-left:auto;font-size:8px;color:#7b8d73;white-space:nowrap}
+.control-center .ram-utilization output{font-size:inherit;line-height:inherit;letter-spacing:0}
+@media(max-width:700px){.control-center .ram-free-reading{gap:2px}.control-center .ram-free-reading output{font-size:21px}.control-center .ram-free-reading>span{font-size:7px}.control-center .ram-utilization{display:none}}
+@media(max-width:420px){.control-center .ram-free-reading output{font-size:19px}.control-center .ram-free-reading>span{font-size:6px}}
+.control-center .app-shell{transition:filter .55s ease,opacity .55s ease}
+.control-center.activity-immersed .app-shell{filter:blur(4px);opacity:.55}
+.control-center #activity-dialog{animation:none;isolation:isolate}
+#activity-dialog::backdrop{background:#263c3442;backdrop-filter:blur(2px)}
+#activity-dialog.is-opening::backdrop{animation:activity-backdrop-in .62s ease both}
+#activity-dialog.is-closing::backdrop{animation:activity-backdrop-in .46s ease reverse both}
+.control-center #activity-dialog.is-transitioning{background:transparent;border-color:transparent;box-shadow:none;overflow:visible}
+#activity-dialog.is-transitioning>*:not(.activity-flight){position:relative;z-index:1;opacity:0}
+#activity-dialog.is-transitioning>.activity-chart{visibility:hidden}
+#activity-dialog.is-transitioning>form{position:static}
+#activity-dialog .dialog-close{z-index:2}
+.activity-flight{position:fixed;inset:0;pointer-events:none;z-index:0}
+.activity-flight-panel,.activity-flight-chart{position:fixed;transform-origin:0 0;will-change:transform}
+.activity-flight-panel{background:#fcfdf7;border:1px solid #e0e5d6;box-shadow:0 24px 90px #17291c28}
+.activity-flight-chart{display:block;max-width:none;overflow:visible;stroke:none}
+@keyframes activity-backdrop-in{from{background:#263c3400;backdrop-filter:blur(0)}to{background:#263c3442;backdrop-filter:blur(2px)}}
+@media(max-width:420px){.control-center .stat-card{padding-left:5px;padding-right:5px}.control-center .stat-heading h3{font-size:7px}.control-center .stat-expand span{font-size:12px}.control-center .stat-value output{font-size:19px}.control-center .network-values strong{font-size:7px}}
+@media(prefers-reduced-motion:reduce){.control-center.activity-immersed .app-shell{filter:none}#activity-dialog::backdrop{backdrop-filter:none}}
+
+/* Persistent power logging has its own history, independent of activity viewers. */
+.control-center main{overflow-y:auto;scrollbar-width:thin}
+.control-center .dashboard-panels{flex-shrink:0;overflow:visible}
+.power-section{flex-shrink:0;min-width:0}
+.power-grid{display:grid;grid-template-columns:.75fr 1.3fr 1.2fr;gap:8px}
+.power-card{padding:11px 13px 8px;border:1px solid #fff9;background:#ffffff90;border-radius:16px;min-width:0}
+.power-card-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:22px}
+.power-card-heading h3{font-size:10px;font-weight:550;margin:0;white-space:nowrap}
+.power-card-heading strong{font-size:14px;font-weight:550;color:#57734f;white-space:nowrap;font-variant-numeric:tabular-nums}
+.power-reading{display:flex;align-items:baseline;gap:5px;margin:12px 0 8px;color:#8c7147}
+.power-reading output{font-size:34px;line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.power-reading>span{font-size:12px}
+.power-current p{font-size:8px;color:#6d7c6c;margin:6px 0 0;line-height:1.4}
+.power-current .power-subtle{font-size:7px;color:#849080}
+.power-live{font-size:8px;color:#8a9388;white-space:nowrap}
+.power-live.is-live{color:#64834e}.power-live.is-live:before{content:'';display:inline-block;width:5px;height:5px;background:#87a767;border-radius:50%;margin-right:4px}
+.power-windows{display:flex;gap:2px;padding:2px;background:#e4eae1;border-radius:12px}
+.power-windows button{border:0;background:transparent;border-radius:10px;font-size:9px;color:#73816d;padding:4px 8px;cursor:pointer}
+.power-windows button[aria-pressed=true]{background:#fff;color:#455d3c;box-shadow:0 1px 3px #24352315}
+.power-chart{display:block;width:100%;height:70px;margin-top:5px;overflow:visible;stroke:none}
+.power-chart-time{display:flex;justify-content:space-between;gap:6px;font-size:7px;color:#82917c;margin-top:1px}
+.power-note{font-size:8px;line-height:1.5;color:#7a8775;margin:6px 2px 0}
+.power-log-button{border:0;background:transparent;padding:0;color:#668057;font-size:9px;cursor:pointer}
+.power-log-button:focus-visible,.power-windows button:focus-visible{outline:2px solid #718f5c;outline-offset:2px}
+.control-center #power-daily-dialog{width:min(800px,calc(100vw - 24px));overflow:auto}
+.power-daily-intro{font-size:12px;line-height:1.7;color:#7b8874;margin:12px 0 20px}
+#power-daily-chart{display:block;width:100%;height:auto;margin-top:20px;stroke:none}
+.power-table-wrap{overflow:auto;max-height:42vh;margin-top:20px}
+.power-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.power-table th,.power-table td{text-align:right;padding:10px 9px;border-bottom:1px solid #e2e7dd}
+.power-table th:first-child,.power-table td:first-child{text-align:left}
+.power-table th{color:#788872;font-weight:500;background:#fcfdf7;position:sticky;top:0}
+@media(max-width:700px){.power-grid{grid-template-columns:1fr 1fr;gap:5px}.power-card{padding:8px 9px;border-radius:13px}.power-current{grid-column:1/-1;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.power-current .power-card-heading{gap:8px}.power-reading{margin:0 0 0 auto;gap:4px}.power-reading output{font-size:25px}.power-current p{margin:0}.power-current .power-subtle{display:none}.power-card-heading{gap:4px}.power-card-heading h3{font-size:9px}.power-card-heading strong{font-size:11px}.power-windows button{font-size:8px;padding:4px 5px}.power-chart{height:62px}.power-note{font-size:7px}.power-table{font-size:10px}.power-table th,.power-table td{padding:9px 6px}}
+@media(max-width:400px){.power-current #power-source{display:none}.power-card-heading h3{font-size:8px}.power-windows button{padding:4px}.power-card-heading strong{font-size:10px}}
+@media(max-width:700px){.power-chart text{font-size:24px}}
+
+/* Power tiles share the activity dialog, focus handling, and graph transition. */
+.power-card{position:relative}
+.power-card .power-card-heading{padding-right:14px}
+.power-card>.stat-expand{z-index:1}
+.power-card .power-windows{position:relative;z-index:2}
+.power-detail-windows{width:max-content;margin:14px 0}
+.power-detail-windows button{font-size:12px;min-width:48px;min-height:32px}
+.is-power-detail .activity-values{max-width:420px}
+.is-power-detail .activity-chart{aspect-ratio:600/240}
+.is-power-detail .activity-chart text{font-size:12px}
+.is-power-detail .activity-time{padding-right:11%}
+@media(max-width:700px){.power-current>.stat-expand{padding:4px}.power-current .power-reading{margin-right:12px}.is-power-detail .activity-chart text{font-size:18px}}
+
+/* Readable at normal zoom: a shared type scale, usable controls, and content-led flow. */
+body.control-center{font-size:16px;line-height:1.5;--readable-muted:#526358;--readable-ink:#24382c}
+.control-center .app-shell{width:100%;max-width:none;padding:0 16px}
+.control-center .topbar{height:auto;min-height:80px;gap:20px;padding:14px 0;flex-wrap:wrap}
+.control-center .brand{font-size:24px;letter-spacing:-.6px}
+.control-center .header-actions{gap:12px}
+.control-center .connection{font-size:14px;color:var(--readable-muted)}
+.control-center .graphics-toggle{gap:3px;padding:4px}
+.control-center .graphics-toggle button{font-size:15px;min-height:44px;min-width:64px;padding:8px 12px;color:#465b4d}
+.control-center .network-button{font-size:15px;min-height:44px;padding:10px 14px;color:#344c3c}
+.control-center .logout-button,.control-center .icon-button{width:44px;height:44px;min-width:44px;min-height:44px}
+.control-center main{gap:18px;padding:4px 0 20px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.control-center .section-heading{gap:12px;min-height:28px;margin-bottom:8px;flex-wrap:wrap;align-items:baseline}
+.control-center .section-heading h2,.control-center .controls-section h1{font-size:20px;line-height:1.4;letter-spacing:0}
+.control-center .section-meta,.control-center .controls-section #sync-label,.control-center .inputs-section .section-meta{font-size:14px;line-height:1.5;letter-spacing:0;max-width:none;color:var(--readable-muted)}
+.control-center .stats-status{font-size:14px;color:var(--readable-muted)}
+.control-center .stats-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.control-center .stat-card{height:auto;padding:12px;grid-template-rows:24px 46px 64px auto;gap:4px;background:#ffffffd6;border-color:#d4ded6;border-radius:18px}
+.control-center .stat-heading{gap:8px;padding-right:18px;align-items:center}
+.control-center .stat-heading h3{font-size:16px;line-height:1.4;white-space:normal}
+.control-center .stat-icon,.control-center .stat-icon svg{width:18px;height:18px;display:block}
+.control-center .stat-value{height:auto;margin:0;align-items:center;gap:5px}
+.control-center .stat-value output{font-size:38px;line-height:1.2;letter-spacing:-1px}
+.control-center .stat-value>span{font-size:16px;color:var(--readable-muted)}
+.control-center .stat-chart{height:64px;min-height:64px;aspect-ratio:auto}
+.control-center .chart-time{display:flex;font-size:14px;line-height:1.4;letter-spacing:0;padding:0;margin:0;gap:8px;color:var(--readable-muted)}
+.control-center .chart-time>span:nth-child(2):not(:last-child){display:none}
+.control-center .stat-expand{padding:8px;color:#48634c}
+.control-center .stat-expand span{font-size:22px;opacity:1}
+.control-center .network-values{height:auto;margin:0;display:grid;grid-template-columns:1fr;gap:6px}
+.control-center .network-values>div{display:flex;justify-content:space-between;align-items:baseline;gap:8px;text-align:left}
+.control-center .network-direction{font-size:14px;letter-spacing:0;color:var(--readable-muted);margin:0;white-space:nowrap}
+.control-center .network-direction:before{display:none}
+.control-center .network-values strong{font-size:16px;letter-spacing:0;color:#3d6554}
+.control-center .network-values>div:last-child strong{color:#7e582b}
+.control-center .ram-overview-values{align-content:center;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+.control-center .ram-free-reading{gap:5px}
+.control-center .ram-free-reading output{font-size:38px;line-height:1.2;color:#395e32}
+.control-center .ram-free-reading>span{font-size:16px;color:var(--readable-muted)}
+.control-center .ram-utilization{display:block;margin:0;font-size:14px;color:var(--readable-muted)}
+.control-center .ram-utilization output{font-size:inherit;letter-spacing:0}
+.control-center .dashboard-panels{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;overflow:visible}
+.control-center .dashboard-pane{padding:14px;border-radius:20px;background:#ffffffc4;border-color:#d4ded6;overflow:visible}
+.control-center .controls-pane,.control-center .secondary-panels{gap:16px}
+.control-center .controls-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px}
+.control-center .control-card,.control-center .control-card:not(.keyboard-light),.control-center .keyboard-light{padding:12px;border-radius:16px;background:#f9fbf6;border-color:#c7d2c8}
+.control-center .level-header{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"label power" "reading power";gap:4px 8px}
+.control-center .level-header h3,.control-center .keyboard-light .level-header h3{font-size:17px;line-height:1.4}
+.control-center .level-value,.control-center .keyboard-light .level-value{justify-content:flex-start;gap:4px}
+.control-center .level-value output,.control-center .keyboard-light .level-value output{font-size:30px;line-height:1.2}
+.control-center .level-value>span{font-size:16px;color:var(--readable-muted)}
+.control-center .power-toggle,.control-center .state-toggle,.control-center .level-header .power-toggle,.control-center .input-card .state-toggle,.control-center .auto-panel .state-toggle,.control-center .display-power-row .state-toggle{font-size:16px;min-height:44px;min-width:70px;padding:10px 14px;gap:7px;border-radius:24px;color:#40573f}
+.control-center .power-toggle[aria-pressed=true],.control-center .state-toggle[aria-pressed=true]{color:#e1f6bf}
+.control-center .power-toggle svg{width:18px;height:18px}
+.control-center .control-card .range-wrap{margin:6px 0 0;padding:2px 0}
+.control-center input[type=range]{height:8px;margin:9px 0}
+.control-center input[type=range]::-webkit-slider-thumb{width:24px;height:24px}
+.control-center input[type=range]::-moz-range-thumb{width:24px;height:24px}
+.control-center .control-card .range-labels{display:flex;min-height:44px;margin:0;gap:8px}
+.control-center .range-labels>span{font-size:14px;line-height:1.5;color:var(--readable-muted)}
+.control-center .range-labels button{min-width:44px;min-height:44px;padding:10px}
+.control-center .range-labels svg{width:20px;height:20px}
+.control-center .display-power-row{padding:16px;margin-top:14px;gap:12px;border-color:#c7d2c8;background:#f9fbf6}
+.control-center .display-power-row h3{font-size:17px;line-height:1.4;margin-bottom:4px}
+.control-center .display-power-row p{font-size:14px;line-height:1.5;color:var(--readable-muted)}
+.control-center .display-power-symbol svg{width:24px;height:24px}
+.control-center .input-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.control-center .input-card{padding:16px;gap:12px;background:#f9fbf6;border-color:#c7d2c8}
+.control-center .input-copy h3{font-size:17px;line-height:1.4}
+.control-center .input-symbol{display:flex}
+.control-center .input-symbol svg{width:22px;height:22px}
+.control-center .backlight-row{grid-template-columns:minmax(0,1fr) 132px;gap:10px;margin-top:10px}
+.control-center .keyboard-light .level-header{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"label power" "reading power"}
+.control-center .auto-panel{padding:12px;flex-direction:column;justify-content:center;gap:14px;background:#f9fbf6;border-color:#c7d2c8}
+.control-center .auto-panel h3{font-size:16px}
+.control-center .inputs-permission-note{font-size:16px;line-height:1.6;margin:12px 0}
+.control-center .touch-strip{min-height:76px;padding:16px;gap:14px;flex-wrap:wrap}
+.control-center .strip-copy h2{font-size:18px}
+.control-center .strip-icon,.control-center .strip-icon svg{width:24px;height:24px}
+.control-center .media-controls{gap:10px}
+.control-center .media-button,.control-center .play-button{width:44px;height:44px}
+.control-center .strip-help{position:static;flex-basis:100%;text-align:left;font-size:14px;line-height:1.5;padding:6px 0}
+.control-center .preset-buttons{gap:10px;flex-wrap:wrap}
+.control-center .preset{min-height:48px;padding:10px 14px;gap:8px;flex:1 1 130px}
+.control-center .preset>span:nth-child(2){font-size:16px;line-height:1.4}
+.control-center .preset svg{width:18px;height:18px}
+.control-center .fan-section{gap:16px}
+.control-center .thermal-readings{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.control-center .thermal-caption{font-size:14px;line-height:1.5;white-space:normal;letter-spacing:0;color:#4d6440;gap:6px}
+.control-center .thermal-caption svg{width:18px;height:18px;flex-shrink:0}
+.control-center .thermal-reading strong{font-size:44px;line-height:1.2;letter-spacing:-1px;margin:10px 0 6px;color:#446932}
+.control-center .gpu-thermal strong{color:#806094}
+.control-center .amd-thermal strong{color:#936638}
+.control-center .thermal-reading .temperature-word{font-size:26px;line-height:1.4}
+.control-center .thermal-sensor{font-size:14px;line-height:1.5;white-space:normal;overflow:visible;color:var(--readable-muted)}
+.control-center .fan-control-box{display:block}
+.control-center .fan-heading h2{font-size:20px;line-height:1.4;margin-bottom:6px}
+.control-center .fan-heading p{font-size:16px;line-height:1.5;max-width:none;color:var(--readable-muted)}
+.control-center .fan-control-box .fan-mode-buttons{width:100%;min-width:0;max-width:none;margin:16px 0 0;gap:8px;flex-wrap:wrap}
+.control-center .fan-mode-buttons button{min-height:48px;min-width:80px;padding:10px 12px;flex:1;color:#40573f}
+.control-center .fan-mode-buttons button>span{font-size:16px;line-height:1.5}
+.control-center .fan-mode-buttons button[aria-pressed=true]{color:#e1f6bf}
+.control-center .target-controls{gap:12px;margin-top:18px;flex-wrap:wrap}
+.control-center .target-controls>label{font-size:16px;color:#40573f}
+.control-center .target-input-wrap{font-size:16px;color:#40573f}
+.control-center .target-input-wrap input{font-size:22px;width:80px;min-height:44px;padding:8px}
+.control-center .target-range-note{font-size:14px;line-height:1.5;width:auto;color:var(--readable-muted)}
+.control-center .target-curve-preview{font-size:14px;line-height:1.6;margin-top:12px;color:var(--readable-muted)}
+.control-center .constant-controls{margin-top:18px}
+.control-center .constant-fan-row,.control-center .constant-fan-row+.constant-fan-row{margin:16px 0}
+.control-center .constant-fan-heading{font-size:16px;line-height:1.5;margin-bottom:10px;color:#40573f;gap:12px;flex-wrap:wrap}
+.control-center .constant-fan-heading output{font-size:20px}
+.control-center .constant-fan-limits{display:flex;font-size:14px;line-height:1.5;color:var(--readable-muted)}
+.control-center .constant-controls p{font-size:14px;line-height:1.6;color:var(--readable-muted);margin-top:12px}
+.control-center .fan-section>.fan-bottom{gap:14px;padding-top:16px;align-items:flex-start}
+.control-center .fan-readings{gap:16px;flex-wrap:wrap}
+.control-center .fan-reading{display:flex;gap:6px;flex-wrap:wrap;align-items:baseline}
+.control-center .fan-reading>span,.control-center .fan-reading small{font-size:14px;color:var(--readable-muted)}
+.control-center .fan-reading strong{font-size:18px}
+.control-center .fan-setup-button{font-size:14px;line-height:1.5;min-height:44px;padding:8px 0;text-align:left;white-space:normal}
+.control-center .drive-grid{gap:14px}
+.control-center .drive-card{padding:16px;border-radius:16px;background:#f9fbf6;border-color:#c7d2c8}
+.control-center .drive-top{gap:12px;flex-wrap:wrap}
+.control-center .drive-icon{width:40px;height:40px;flex-shrink:0}
+.control-center .drive-icon svg{width:24px;height:24px}
+.control-center .drive-heading{flex:1;min-width:140px}
+.control-center .drive-heading h3{font-size:18px;line-height:1.4;margin-bottom:4px}
+.control-center .drive-heading p{font-size:14px;line-height:1.5;color:var(--readable-muted);white-space:normal;overflow-wrap:anywhere}
+.control-center .drive-mount-button{font-size:16px;min-height:44px;min-width:112px;padding:10px 14px}
+.control-center .drive-state{font-size:14px;color:var(--readable-muted);line-height:1.5}
+.control-center .drives-note,.control-center .drive-empty{font-size:14px;line-height:1.6;color:var(--readable-muted);margin-top:14px}
+.control-center .power-grid{grid-template-columns:.65fr 1.35fr 1.35fr;gap:10px}
+.control-center .power-card{padding:12px;border-radius:18px;background:#ffffffd6;border-color:#d4ded6}
+.control-center .power-card-heading{min-height:44px;gap:10px;flex-wrap:wrap;padding-right:22px}
+.control-center .power-card-heading h3{font-size:17px;line-height:1.4;white-space:normal}
+.control-center .power-card-heading strong{font-size:24px;line-height:1.4;color:#395e32}
+.control-center .power-reading{margin:10px 0 8px;gap:8px;color:#805c29}
+.control-center .power-reading output{font-size:48px;line-height:1.2;letter-spacing:-1px}
+.control-center .power-reading>span{font-size:20px}
+.control-center .power-current p,.control-center .power-current .power-subtle{display:block;font-size:14px;line-height:1.5;color:var(--readable-muted);margin-top:10px}
+.control-center .power-live{font-size:14px;color:var(--readable-muted)}
+.control-center .power-live.is-live{color:#3d682e}
+.control-center .power-windows{padding:3px;border-radius:24px}
+.control-center .power-windows button{font-size:16px;min-height:44px;min-width:48px;padding:8px 10px;color:#40573f;border-radius:20px}
+.control-center .power-chart{height:104px;min-height:104px;aspect-ratio:auto;margin:6px 0}
+.control-center .power-chart-time,.control-center .power-note,.control-center .power-log-button{font-size:14px;line-height:1.5;color:var(--readable-muted)}
+.control-center .power-log-button{min-height:44px;padding:8px 0;color:#3e6234;text-align:left}
+.control-center .power-note{margin:8px 0 0}
+.control-center dialog{font-size:16px;line-height:1.6;width:min(720px,calc(100vw - 32px));padding:32px;max-height:calc(100dvh - 32px);overflow:auto}
+.control-center dialog h2,.control-center #activity-dialog h2{font-size:34px;line-height:1.2;letter-spacing:-.7px;margin-bottom:18px}
+.control-center dialog .eyebrow,.control-center #activity-dialog .eyebrow{font-size:14px;line-height:1.5;letter-spacing:1px;margin-bottom:18px;margin-right:40px;color:#40573f}
+.control-center dialog .dialog-intro,.control-center dialog .dialog-note,.control-center dialog .connection-note,.control-center .power-daily-intro{font-size:16px;line-height:1.65;color:var(--readable-muted)}
+.control-center dialog .input-label{font-size:14px;line-height:1.5;color:#40573f}
+.control-center dialog .password-input{font-size:18px;min-height:52px;padding:12px 14px}
+.control-center dialog .primary-button{font-size:17px;min-height:48px;padding:12px 16px}
+.control-center dialog .remember-label{font-size:16px;line-height:1.5;gap:12px}
+.control-center dialog .remember-label small{font-size:14px;line-height:1.5;color:var(--readable-muted)}
+.control-center dialog .remember-label input{width:22px;height:22px}
+.control-center dialog .form-error{font-size:16px;line-height:1.5}
+.control-center dialog .setup-steps{font-size:16px;line-height:1.75;padding-left:24px}
+.control-center dialog code,.control-center #input-help-dialog code,.control-center dialog .helper-path{font-size:14px;line-height:1.65;overflow-wrap:anywhere;word-break:break-word}
+.control-center dialog .address-box{gap:12px;flex-wrap:wrap;padding:16px}
+.control-center dialog .address-box code{font-size:18px}
+.control-center .dialog-close{font-size:28px;width:44px;height:44px;min-width:44px;min-height:44px;display:grid;place-items:center;top:14px;right:14px}
+.control-center #activity-dialog{width:calc(100vw - 32px);max-width:none;padding:24px}
+.control-center .activity-values{gap:20px;margin:16px 0 20px}
+.control-center .activity-values h3{font-size:18px;line-height:1.5;margin-bottom:12px}
+.control-center .activity-values p{font-size:18px;line-height:1.6;gap:20px;margin:10px 0;color:var(--readable-muted)}
+.control-center .activity-values strong{color:#2f5139}
+.control-center .activity-chart,.control-center .is-power-detail .activity-chart{height:clamp(240px,42dvh,620px);min-height:240px;aspect-ratio:auto}
+.control-center .activity-time,.control-center .is-power-detail .activity-time{font-size:14px;line-height:1.5;color:var(--readable-muted);padding:0;gap:12px;margin-top:8px}
+.control-center .stat-chart text,.control-center .power-chart text,.control-center .activity-chart text{font-size:14px;fill:var(--readable-muted)}
+.control-center .is-power-detail .activity-values{max-width:none}
+.control-center .power-detail-windows{margin:20px 0}
+.control-center .memory-available{padding:22px;grid-template-columns:minmax(0,1fr) 96px}
+.control-center .memory-available .memory-available-label{font-size:14px;line-height:1.5;letter-spacing:1px}
+.control-center #memory-available-total,.control-center .memory-available .memory-available-note{font-size:14px;line-height:1.5;color:var(--readable-muted)}
+.control-center .memory-available output{font-size:48px;line-height:1.2}
+.control-center .memory-available-ring{width:96px;height:96px}
+.control-center .memory-available-ring>div{width:76px;height:76px}
+.control-center .memory-available-ring strong{font-size:24px}
+.control-center .memory-available-ring span{font-size:14px;color:var(--readable-muted)}
+.control-center #power-daily-dialog{width:min(960px,calc(100vw - 32px))}
+.control-center .power-table{font-size:16px;line-height:1.5;min-width:610px}
+.control-center .power-table th,.control-center .power-table td{padding:14px 12px}
+.control-center .power-table th{font-size:14px;color:var(--readable-muted)}
+.control-center .toast{font-size:16px;line-height:1.5;padding:14px 20px;max-width:calc(100vw - 32px)}
+.control-center .notifier-section{padding:20px;border-radius:18px;background:#ffffffd6;border-color:#d4ded6}
+.control-center .notifier-card h3{font-size:18px;line-height:1.5;white-space:normal}
+.control-center .notifier-overall-percent{font-size:22px}
+.control-center .notifier-card .notifier-overall-detail,.control-center .notifier-card .notifier-current-file{font-size:14px;line-height:1.6;color:var(--readable-muted)}
+.control-center .notifier-card progress{height:10px;margin:12px 0}
+@media(max-width:799px){
+  .control-center .stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .control-center .network-stat{grid-column:span 2}
+  .control-center .network-values{grid-template-columns:1fr 1fr;gap:20px}
+  .control-center .network-values>div{display:block}
+  .control-center .network-values strong{font-size:22px;display:block;margin-top:4px}
+  .control-center .network-values>div:last-child{text-align:left}
+  .control-center .network-values>div:last-child .network-direction{justify-content:flex-start}
+  .control-center .dashboard-panels{grid-template-columns:1fr}
+  .control-center .power-grid{grid-template-columns:1fr 1fr}
+  .control-center .power-current{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 20px}
+  .control-center .power-current .power-card-heading{grid-column:1;min-height:28px;justify-content:flex-start}
+  .control-center .power-current .power-reading{grid-column:2;grid-row:1/4;margin:0 16px 0 0}
+  .control-center .power-current p,.control-center .power-current .power-subtle{margin:0}
+  .control-center .activity-summary.has-memory{grid-template-columns:1fr;gap:20px}
+}
+@media(max-width:700px){
+  .control-center .app-shell{padding:0 16px}
+  .control-center .topbar{display:grid;grid-template-columns:1fr auto;grid-template-areas:"brand actions" "graphics graphics";gap:12px;padding:14px 0;min-height:124px;flex-shrink:0}
+  .control-center .brand{grid-area:brand;font-size:24px}
+  .control-center .graphics-toggle{grid-area:graphics;width:max-content;max-width:100%;margin:0}
+  .control-center .graphics-toggle button{font-size:15px;min-height:44px;min-width:76px;padding:8px 14px}
+  .control-center .header-actions{grid-area:actions;gap:8px}
+  .control-center .header-actions .network-button{min-width:44px;min-height:44px;padding:10px}
+  .control-center .header-actions .connection{display:none}
+  .control-center main{gap:24px;padding-top:10px;padding-bottom:max(28px,env(safe-area-inset-bottom))}
+  .control-center .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .control-center .stat-card{padding:14px;grid-template-rows:28px 64px 76px auto;gap:8px}
+  .control-center .stat-chart{height:76px;min-height:76px}
+  .control-center .stat-icon{display:none}
+  .control-center .network-stat{grid-column:1/-1}
+  .control-center .network-values{grid-template-columns:1fr 1fr}
+  .control-center .stat-value output,.control-center .ram-free-reading output{font-size:36px}
+  .control-center .ram-free-reading>span{font-size:14px}
+  .control-center .ram-utilization{display:block;font-size:14px}
+  .control-center .panel-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;border-radius:22px;background:#d3dcd5;flex-shrink:0}
+  .control-center .panel-tabs button{font-size:16px;line-height:1.4;min-height:48px;padding:10px 12px;color:#42594a}
+  .control-center .dashboard-panels{display:block;overflow:visible}
+  .control-center .dashboard-pane{padding:20px;max-height:none}
+  .control-center .secondary-panels{display:contents}
+  .control-center[data-panel=controls] .controls-pane,.control-center[data-panel=inputs] .controls-pane{gap:24px}
+  .control-center .controls-section h1{font-size:20px}
+  .control-center .controls-section .section-heading,.control-center .inputs-section .section-heading{margin-bottom:14px}
+  .control-center .power-grid{grid-template-columns:1fr;gap:14px}
+  .control-center .power-card{padding:18px}
+  .control-center .power-current{grid-column:auto;grid-template-columns:1fr auto;gap:8px 14px}
+  .control-center .power-current .power-card-heading{gap:8px;padding-right:0}
+  .control-center .power-current .power-reading{grid-row:2;grid-column:1/-1;margin:0;justify-content:flex-start}
+  .control-center .power-current #power-source,.control-center .power-current .power-subtle{display:block;grid-column:1/-1}
+  .control-center .power-card-heading h3{font-size:18px}
+  .control-center .power-card-heading strong{font-size:24px}
+  .control-center .power-reading output{font-size:48px}
+  .control-center .power-chart{height:160px;min-height:160px}
+  .control-center .thermal-readings{grid-template-columns:1fr;gap:18px}
+  .control-center .thermal-reading{display:grid;grid-template-columns:1fr auto;gap:4px 16px}
+  .control-center .thermal-reading strong{grid-column:2;grid-row:1/3;font-size:40px;margin:0;align-self:center}
+  .control-center .thermal-reading .temperature-word{font-size:26px}
+  .control-center .thermal-sensor{grid-column:1}
+  .control-center .fan-control-box .fan-mode-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .control-center .fan-mode-buttons button{min-height:48px}
+  .control-center dialog,.control-center #activity-dialog{padding:28px 22px;max-height:calc(100dvh - 24px);width:calc(100vw - 24px)}
+  .control-center dialog h2,.control-center #activity-dialog h2{font-size:30px;margin-right:24px}
+  .control-center .activity-values{flex-wrap:wrap;gap:24px}
+  .control-center .activity-values>div{flex-basis:100%}
+  .control-center .activity-values p{font-size:18px}
+  .control-center .activity-chart,.control-center .is-power-detail .activity-chart{height:220px;min-height:220px}
+  .control-center .memory-available{padding:18px;gap:12px}
+  .control-center .memory-available output{font-size:40px}
+}
+.control-center .gpu-sleeping .stat-value output,.control-center .control-card.is-off .level-value output,.control-center .control-card.is-off .value-row output{color:#596b59}
+.control-center .stats-status.is-live{color:#46663b}
+
+/* Fill the window with useful content; scrolling never needs a visible track. */
+.control-center main::-webkit-scrollbar,.control-center dialog::-webkit-scrollbar,.control-center .power-table-wrap::-webkit-scrollbar{display:none;width:0;height:0}
+.control-center dialog,.control-center .power-table-wrap{scrollbar-width:none}
+.control-center .stat-heading{gap:6px;padding-right:16px}
+.control-center .network-values{gap:3px}
+.control-center .network-values>div{gap:4px}
+.control-center #activity-dialog .activity-values>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.control-center #activity-dialog .activity-values h3{grid-column:1/-1;margin:0}
+.control-center #activity-dialog .activity-values p{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin:0}
+.control-center #activity-dialog .activity-values strong{font-size:28px;line-height:1.3}
+@media(min-width:800px) and (max-width:1100px){
+  .control-center .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.2fr)}
+  .control-center .stat-icon{display:none}
+  .control-center .ram-free-reading>span{font-size:14px}
+  .control-center .network-values strong{font-size:16px}
+  .control-center .power-card-heading{padding-right:16px;gap:6px}
+  .control-center .power-card-heading strong{font-size:22px}
+  .control-center .power-reading output{font-size:44px}
+}
+@media(max-width:799px){
+  .control-center .backlight-row{grid-template-columns:1fr}
+  .control-center .auto-panel{flex-direction:row;justify-content:space-between}
+  .control-center .activity-summary.has-memory{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .control-center main{gap:18px}
+  .control-center .stat-card{padding:12px;grid-template-rows:26px 50px 64px auto;gap:4px}
+  .control-center .stat-chart{height:64px;min-height:64px}
+  .control-center .power-chart{height:128px;min-height:128px}
+  .control-center #activity-dialog .activity-values{gap:16px}
+  .control-center #activity-dialog .activity-values strong{font-size:24px}
+  .control-center #activity-dialog .activity-values p{font-size:16px}
+}
+
+.control-center main:focus-visible{outline:2px solid #48634c;outline-offset:-2px}
+.control-center .input-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px}
+.control-center .input-card{padding:10px;gap:8px}
+.control-center .fan-readings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));flex-basis:100%;width:100%;gap:12px}
+.control-center .fan-section>.fan-bottom>.fan-setup-button{flex-basis:100%;width:100%}
+@media(min-width:800px) and (max-width:1100px){.control-center .input-symbol{display:none}}
+
+/* Align the overview around comparable readings and two equal energy plots. */
+body.control-center{background:#edf2ef}
+.control-center .stat-card,.control-center .power-card,.control-center .dashboard-pane{border-radius:16px;box-shadow:none}
+.control-center .stat-card{grid-template-rows:24px 66px 64px auto}
+.control-center .stat-value{align-self:start}
+.control-center .ram-overview-values{display:grid;grid-template-rows:46px 20px;align-content:start;gap:0}
+.control-center .ram-free-reading{align-self:start}
+.control-center .ram-utilization{align-self:start}
+.control-center .power-section>.section-heading{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.control-center .power-section .power-current{display:flex;align-items:center;gap:16px;width:auto;min-height:58px;margin:0;padding:8px 32px 8px 12px;border-radius:12px;flex-shrink:0}
+.control-center .power-section .power-current .power-card-heading{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;min-height:0;padding:0;grid-area:auto}
+.control-center .power-section .power-current .power-card-heading h3{font-size:14px;font-weight:500;line-height:1.4;color:#526358}
+.control-center .power-section .power-current .power-reading{margin:0;gap:5px;grid-area:auto}
+.control-center .power-section .power-current .power-reading output{font-size:34px;line-height:1.2;letter-spacing:-.7px;color:#7b5d32}
+.control-center .power-section .power-current .power-reading>span{font-size:16px}
+.control-center .power-section .power-current #power-source,.control-center .power-section .power-current .power-subtle{display:none}
+.control-center .power-section .power-current>.stat-expand{align-items:center}
+.control-center .power-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.control-center .power-grid>.power-card{padding:16px}
+.control-center .power-grid .power-card-heading{padding-right:20px;gap:10px}
+.control-center .power-grid .power-card-heading h3{font-size:18px}
+.control-center .power-grid .power-card-heading strong{font-size:26px}
+.control-center .power-grid .power-chart{height:120px;min-height:120px}
+.control-center .power-card .power-chart-time{margin-top:4px}
+.control-center .dashboard-pane{background:#ffffffd9}
+.control-center .control-card,.control-center .control-card:not(.keyboard-light),.control-center .keyboard-light,.control-center .drive-card,.control-center .input-card{border-radius:12px;background:#f6f9f5}
+.control-center #power-daily-dialog{width:calc(100vw - 32px);max-width:none;padding:28px}
+.control-center #power-daily-dialog h2{margin-bottom:12px}
+.control-center .power-daily-intro{margin:8px 0 22px}
+.daily-energy-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:20px 0;border-top:1px solid #d6dfd7;border-bottom:1px solid #d6dfd7}
+.daily-energy-summary>div{min-width:0}
+.daily-energy-summary span{display:block;font-size:14px;line-height:1.5;color:#526358;margin-bottom:7px}
+.daily-energy-summary strong{display:block;font-size:28px;line-height:1.4;color:#30573e;font-variant-numeric:tabular-nums}
+.control-center #power-daily-chart{height:320px;min-height:320px;margin:22px 0 0}
+.control-center #power-daily-chart text{font-size:14px;font-family:inherit;stroke:none}
+.control-center .daily-chart-note{font-size:14px;line-height:1.6;color:#526358;margin:12px 0 22px}
+.daily-energy-values{border-top:1px solid #d6dfd7;padding-top:8px}
+.daily-energy-values summary{font-size:16px;line-height:1.5;font-weight:550;min-height:44px;padding:10px 0;cursor:pointer;color:#314e3b}
+.control-center .daily-energy-values .power-table-wrap{margin-top:12px}
+@media(max-width:700px){
+  .control-center .stat-card{grid-template-rows:26px 66px 64px auto}
+  .control-center .power-section>.section-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+  .control-center .power-section>.section-heading h2{grid-column:1;grid-row:1}
+  .control-center .power-section #power-daily-open{grid-column:2;grid-row:1}
+  .control-center .power-section .power-current{grid-column:1/-1;grid-row:2;width:100%;margin:0;padding:10px 34px 10px 14px;justify-content:space-between}
+  .control-center .power-section .power-current .power-card-heading{flex-direction:row;align-items:center;gap:10px}
+  .control-center .power-grid{grid-template-columns:1fr;gap:14px}
+  .control-center .power-grid>.power-card{padding:16px}
+  .control-center .power-grid .power-chart{height:136px;min-height:136px}
+  .control-center #power-daily-dialog{width:calc(100vw - 24px);padding:24px 20px}
+  .daily-energy-summary{gap:12px;padding:16px 0}
+  .daily-energy-summary strong{font-size:24px}
+}
+@media(max-width:600px){
+  .daily-energy-summary{grid-template-columns:1fr;gap:12px}
+  .daily-energy-summary>div{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .daily-energy-summary span{margin:0}
+  .daily-energy-summary strong{white-space:nowrap}
+}
+
+/* Product Design audit: reuse clear selection states and reflow narrow panels. */
+.control-center .graphics-toggle button[aria-pressed=true],.control-center .power-windows button[aria-pressed=true]{background:#293524;color:#e1f6bf;box-shadow:none}
+.control-center .cooling-pane{container-type:inline-size}
+@container (max-width:520px){
+  .control-center .thermal-readings{grid-template-columns:1fr;gap:14px}
+  .control-center .thermal-reading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 16px;align-items:center}
+  .control-center .thermal-reading strong{grid-column:2;grid-row:1/3;margin:0;font-size:44px;align-self:center}
+  .control-center .thermal-reading .temperature-word{font-size:26px}
+  .control-center .thermal-sensor{grid-column:1}
+}
+@container (max-width:220px){
+  .control-center .control-card .range-labels{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:4px;min-height:0}
+  .control-center .range-labels>button:first-child{grid-column:1;grid-row:1}
+  .control-center .range-labels>button:last-child{grid-column:3;grid-row:1}
+  .control-center .range-labels>span{grid-column:1/-1;grid-row:2;text-align:center;min-width:0;white-space:normal}
+}
+@media(max-width:600px){
+  .control-center #power-daily-chart{height:clamp(210px,28dvh,250px);min-height:210px}
+}
+
+.control-center .power-section>.section-heading #power-daily-open{margin-left:auto}

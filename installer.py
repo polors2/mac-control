@@ -15,6 +15,7 @@ from auth import AuthStore
 from build_controls_app import APP_NAME, EXECUTABLE_NAME
 from fans import FanController
 from inputs import InputController
+from graphics import GraphicsController
 import service
 
 ROOT = Path(__file__).resolve().parent
@@ -76,12 +77,14 @@ def build_all():
     run(['/usr/bin/clang', '-fobjc-arc', '-O2', '-framework', 'Foundation', '-framework', 'IOKit',
          ROOT / 'native' / 'fans.m', '-o', ROOT / '.runtime' / 'fans'])
     run([sys.executable, ROOT / 'build-input-app.py'], cwd=ROOT)
+    run(['/bin/zsh', ROOT / 'install-graphics-helper.command', '--build-only'], cwd=ROOT)
     run(['/usr/bin/codesign', '--verify', '--strict', ROOT / '.runtime' / APP_NAME])
 
 
-def ensure_password(root=ROOT, managed=service.MANAGED, prompt=None):
+def ensure_password(root=ROOT, managed=None, prompt=None):
     """Keep deployed credentials authoritative; never reset an existing password."""
     prompt = prompt or getpass.getpass
+    managed = service.deployment_root() if managed is None else managed
     deployed = Path(managed) / '.runtime' / 'auth.sqlite3'
     original = Path(root) / '.runtime' / 'auth.sqlite3'
     for path in ([deployed] if deployed.exists() else [original]):
@@ -117,6 +120,9 @@ def install_helpers():
         ('Input', 'install-input-helper.command', ROOT / '.runtime' / 'Mac Control Inputs.app', INPUT_APP,
          DAEMONS / 'local.maccontrol.inputs.plist', 'local.maccontrol.inputs',
          [str(INPUT_APP / 'Contents' / 'MacOS' / 'MacControlInputs'), 'serve', owner], InputController().status(force=True)),
+        ('Graphics', 'install-graphics-helper.command', ROOT / '.runtime' / 'graphics-helper', PRIVILEGED / 'local.maccontrol.graphics',
+         DAEMONS / 'local.maccontrol.graphics.plist', 'local.maccontrol.graphics',
+         [str(PRIVILEGED / 'local.maccontrol.graphics'), 'serve', owner], GraphicsController().helper_status()),
     ]
     updates = []
     for name, script, source, installed, plist, label, arguments, status in plans:
@@ -142,7 +148,7 @@ def wait_for_input_helper():
 
 
 def media_allowed():
-    binary = service.MANAGED_RUNTIME / APP_NAME / 'Contents' / 'MacOS' / EXECUTABLE_NAME
+    binary = service.deployment_root() / '.runtime' / APP_NAME / 'Contents' / 'MacOS' / EXECUTABLE_NAME
     result = subprocess.run([str(binary), 'status'], capture_output=True, text=True, timeout=8, check=True)
     return bool(json.loads(result.stdout).get('capabilities', {}).get('media'))
 
@@ -159,7 +165,7 @@ def finish_permissions(no_open=False):
         if not wait_for_input_helper().get('permissionGranted'):
             pending.append('Input Monitoring for Mac Control Inputs')
     if not media_allowed():
-        app = service.MANAGED_RUNTIME / APP_NAME
+        app = service.deployment_root() / '.runtime' / APP_NAME
         print(f'Accessibility: enable Mac Control Media ({app}).')
         if not no_open:
             run(['/usr/bin/open', '-n', app])
@@ -181,7 +187,7 @@ def main():
         raise RuntimeError('Run ./install.command in Terminal, or use --no-open to defer privacy approval.')
     build_all()
     if args.check:
-        print('Preflight passed: controls/media, display-off guard, metrics, USB drives, fans, and input app built successfully.')
+        print('Preflight passed: controls/media, display-off guard, metrics, USB drives, fans, input app, and graphics helper built successfully.')
         return
     ensure_password()
     install_helpers()

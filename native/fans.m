@@ -15,7 +15,7 @@ static void reply(int fd, NSDictionary *result) {
 }
 static NSDictionary *fanStatus(MCTargetController *controller, NSArray *constantTargets) {
     NSMutableDictionary *result = [mcThermals() mutableCopy];
-    [result addEntriesFromDictionary:controller.status]; result[@"version"] = @3;
+    [result addEntriesFromDictionary:controller.status]; result[@"version"] = @4;
     if (controller.enabled) result[@"fanMode"] = @"target";
     else if (constantTargets && [result[@"fans"] count] == constantTargets.count) {
         BOOL confirmed = [@[@"custom", @"max"] containsObject:result[@"fanMode"]];
@@ -29,11 +29,6 @@ static NSDictionary *fanStatus(MCTargetController *controller, NSArray *constant
 }
 int main(int argc, const char *argv[]) {
     @autoreleasepool {
-        if (argc == 4 && !strcmp(argv[1], "curve")) {
-            double target = strtod(argv[2], NULL), temperature = strtod(argv[3], NULL);
-            if (!isfinite(target) || !isfinite(temperature) || target < 50 || target > 85) return 2;
-            printf("%.6f\n", mcCurve(temperature - target)); return 0;
-        }
         if (argc == 2 && (!strcmp(argv[1], "status") || !strcmp(argv[1], "auto") || !strcmp(argv[1], "max"))) {
             NSString *error = strcmp(argv[1], "status") ? mcFanMode(!strcmp(argv[1], "max")) : nil;
             NSMutableDictionary *status = [mcThermals() mutableCopy]; if (error) status[@"error"] = error;
@@ -47,7 +42,7 @@ int main(int argc, const char *argv[]) {
         mcFanMode(NO); // Always start with Apple management; Max is never persisted across restarts.
         MCTargetController *controller = [MCTargetController new];
         NSArray *constantTargets = nil;
-        double nextTick = 0;
+        double nextTick = 0, nextMaintenance = NSProcessInfo.processInfo.systemUptime + 60;
         int server = socket(AF_UNIX, SOCK_STREAM, 0); if (server < 0) return 3;
         struct sockaddr_un address = {0}; address.sun_family = AF_UNIX;
         strlcpy(address.sun_path, FAN_SOCKET, sizeof(address.sun_path));
@@ -55,9 +50,15 @@ int main(int argc, const char *argv[]) {
         if (bind(server, (struct sockaddr *)&address, sizeof(address)) || chown(FAN_SOCKET, (uid_t)owner, -1) || chmod(FAN_SOCKET, 0600) || listen(server, 8)) { close(server); return 3; }
         while (!stopping) {
             double now = NSProcessInfo.processInfo.systemUptime;
-            if (controller.enabled && now >= nextTick) { [controller tick]; nextTick = now + 2; }
+            @autoreleasepool {
+                if (controller.enabled && now >= nextTick) { [controller tick]; nextTick = now + 2; }
+                // Retention also runs in Auto/Constant/Max without reading sensors.
+                if (now >= nextMaintenance) { [controller saveLearning]; nextMaintenance = now + 60; }
+            }
             struct pollfd ready = {.fd = server, .events = POLLIN};
-            int timeoutMS = controller.enabled ? (int)fmax(1, fmin(2000, (nextTick - NSProcessInfo.processInfo.systemUptime) * 1000)) : -1;
+            double untilMaintenance = nextMaintenance - NSProcessInfo.processInfo.systemUptime;
+            double delay = controller.enabled ? fmin(untilMaintenance, nextTick - NSProcessInfo.processInfo.systemUptime) : untilMaintenance;
+            int timeoutMS = (int)fmax(1, fmin(60000, delay * 1000));
             if (poll(&ready, 1, timeoutMS) <= 0) continue;
             int client = accept(server, NULL, NULL); if (client < 0) continue;
             uid_t user = -1; gid_t group = -1;
@@ -107,6 +108,6 @@ int main(int argc, const char *argv[]) {
             }
             close(client);
         }
-        mcFanMode(NO); close(server); unlink(FAN_SOCKET); return 0;
+        [controller saveLearning]; mcFanMode(NO); close(server); unlink(FAN_SOCKET); return 0;
     }
 }

@@ -49,6 +49,19 @@ class InstallerPasswordTests(unittest.TestCase):
         self.assertFalse((self.managed / '.runtime' / 'auth.sqlite3').exists())
         prompt.assert_not_called()
 
+    def test_existing_checkout_install_is_used_without_resetting_credentials(self):
+        path = self.root / '.runtime' / 'auth.sqlite3'
+        auth = AuthStore(path)
+        auth.set_password('checkout-install-test')
+        token = auth.new_session(True)
+        prompt = Mock(side_effect=AssertionError('Do not reset migrated credentials'))
+        with patch.object(installer.service, 'deployment_root', return_value=self.root), \
+             contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(installer.ensure_password(self.root, prompt=prompt), path)
+        self.assertTrue(auth.valid_session(token))
+        self.assertFalse(self.managed.exists())
+        prompt.assert_not_called()
+
     def test_mismatched_and_empty_passwords_are_retried(self):
         prompt = Mock(side_effect=['first', 'different', '', '', 'valid-test-password', 'valid-test-password'])
         path = self.ensure(prompt)
@@ -109,6 +122,17 @@ class InstallerPayloadTests(unittest.TestCase):
 
 
 class InstallerFlowTests(unittest.TestCase):
+    def test_installs_graphics_without_restarting_current_fan_or_input_helpers(self):
+        with patch.object(installer, 'helper_current', side_effect=[True, True, False]), \
+             patch.object(installer.FanController, 'status', return_value={'installed': True}), \
+             patch.object(installer.InputController, 'status', return_value={'installed': True}), \
+             patch.object(installer.GraphicsController, 'helper_status', return_value={'installed': False}), \
+             patch.object(installer, 'run') as run, contextlib.redirect_stdout(io.StringIO()):
+            installer.install_helpers()
+        self.assertEqual(len(run.call_args_list), 2)
+        self.assertEqual(run.call_args_list[0].args[0], ['/usr/bin/sudo', '-v'])
+        self.assertEqual(run.call_args_list[1].args[0], ['/bin/zsh', installer.ROOT / 'install-graphics-helper.command'])
+
     def test_check_builds_without_touching_password_or_services(self):
         with patch('sys.argv', ['installer.py', '--check']), patch('installer.sys.platform', 'darwin'), \
              patch('installer.platform.mac_ver', return_value=('13.7.8', (), '')), \
