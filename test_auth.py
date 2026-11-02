@@ -96,6 +96,7 @@ class HTTPAuthenticationTests(unittest.TestCase):
         self.assertEqual(self.request('/api/state')[0], 401)
         self.assertEqual(self.request('/api/stats')[0], 401)
         self.assertEqual(self.request('/api/power')[0], 401)
+        self.assertEqual(self.request('/api/host-status')[0], 401)
         self.assertEqual(self.request('/api/fans', {'mode': 'max'})[0], 401)
         self.assertEqual(self.request('/api/inputs')[0], 401)
         self.assertEqual(self.request('/api/inputs', {'device': 'keyboard', 'enabled': False})[0], 401)
@@ -104,6 +105,21 @@ class HTTPAuthenticationTests(unittest.TestCase):
     def test_incorrect_password_and_cross_origin_rejected(self):
         self.assertEqual(self.request('/api/session', {'password': 'wrong'})[0], 401)
         self.assertEqual(self.request('/api/session', {'password': self.password}, origin='http://untrusted.test')[0], 403)
+
+    def test_host_status_endpoint_returns_authenticated_summary(self):
+        from unittest.mock import Mock
+        monitor = Mock()
+        monitor.snapshot.return_value = {'battery': {'available': False}, 'tailscale': {'state': 'unavailable'}}
+        with patch.object(server, 'HOST_STATUS', monitor):
+            self.assertEqual(self.request('/api/host-status')[0], 401)
+            monitor.snapshot.assert_not_called()
+            _, headers, _ = self.request('/api/session', {'password': self.password})
+            cookie = headers['Set-Cookie'].split(';', 1)[0]
+            code, response_headers, data = self.request('/api/host-status', cookie=cookie)
+            self.assertEqual(code, 200)
+            self.assertEqual(response_headers['Cache-Control'], 'no-store')
+            self.assertEqual(data, monitor.snapshot.return_value)
+            monitor.snapshot.assert_called_once_with()
 
     def test_power_history_ranges_require_auth_and_reject_invalid_windows(self):
         from unittest.mock import Mock

@@ -1,6 +1,11 @@
 # How Mac Control reads notifier activity
 
 Contract version: **1.1.0**. Documented against the implementation on **2026-11-01**.
+Local Mac Control client details reviewed on **2026-11-02**. This was Mac Control's
+first API integration use case, as identified by the user. See the
+[full API guide](../API.md) and locally owned
+[API/use-case manifest](../../packages/contracts/mac-control-api.json) for the
+complete Mac Control interface and this checkout's client behavior.
 This document is distributed with both repositories. Paths in the contract bundle
 are relative to the repository containing that bundle; they contain no local
 credentials, user-specific paths or actual tailnet hostnames.
@@ -136,9 +141,9 @@ An upstream/configuration failure returns **HTTP 200** with this fallback:
 
 `finder_progress`, `push` and `file_activity.observer` are absent in this fallback.
 Consumers must check top-level availability before dereferencing them. Empty lists
-here are not proof that no copy is running. A failed browser request marks the
-activity connection disconnected; a successful fallback explicitly shows the
-notifier as unavailable.
+here are not proof that no copy is running. In this checkout, a failed browser
+request or successful unavailable fallback hides the copy section; there is no
+separate unavailable status displayed in that section.
 
 ## Polling, rendering and data meaning
 
@@ -152,10 +157,16 @@ The notifier's Finder reader samples every 3 seconds regardless of browser viewe
 Overall latency includes both sampling and polling. Cards are keyed by activity ID;
 existing text and progress elements are updated only as values change. There is
 no full-page reload, per-sample list rebuild, repeated toast or extra Mac progress
-panel. Each card shows Finder’s overall progress first, with current-file rows underneath.
+panel. In this checkout, each card shows overall progress and measured detail,
+followed by the first current filename and a count of additional current files.
+It does not render the payload's individual per-file progress rows.
 Up to eight active copy cards are shown. Terminal managed jobs and synthetic/demo
-jobs are excluded from both dashboards’ normal views; they do not linger as old
-verification copies. Generic filesystem hints are not displayed in Mac Control.
+jobs are excluded from normal views; they do not linger as old verification
+copies. Generic filesystem hints are not displayed in Mac Control. The local
+client also filters out unmeasured placeholders and Finder navigation: Finder
+labels must match its English operation filter and include measured byte/time
+detail. Localized operation labels can therefore be omitted even when present
+in the API response. See `copyProgressRows` in `web/notifier-activity.js`.
 
 These sources have different guarantees:
 
@@ -253,9 +264,12 @@ start its user launchd service independently. Both services run after user login
 | [openapi.json](../../packages/contracts/openapi.json) | Generated notifier HTTP API plus documented security/authorization and response schemas |
 | [mac-control-examples.json](../../packages/contracts/mac-control-examples.json) | Fictional healthy-copy, permission-denied, no-visible-window, unavailable and configuration examples |
 
-The notifier repository is canonical. The Mac Control repository carries identical
-copies so machines and maintainers can discover the contract without access to
-another checkout. Regenerate and validate in the notifier repository:
+The notifier repository is canonical for the five machine-readable artifacts in
+the table above. The Mac Control repository carries identical copies so machines
+and maintainers can discover that contract without another checkout. The local
+full API contract and use-case manifest are separately maintained here; they do
+not replace the upstream export. Local client notes in this guide describe this
+checkout. Regenerate and validate the upstream bundle in the notifier repository:
 
 ```sh
 .venv/bin/python scripts/export_contracts.py

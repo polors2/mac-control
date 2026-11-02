@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "last_reviewed": "2026-11-02",
+  "human_readable_companion": "MEMORY.md",
+  "entries": [
+    {
+      "id": "documentation-policy",
+      "title": "Document for humans and machines",
+      "kind": "preference",
+      "summary": "The user requires persistent repository memory readable by any AI provider, with human-readable and machine-readable documentation kept current together.",
+      "details": [
+        "Maintain MEMORY.md and MEMORY.json together as knowledge changes; a chat transcript or provider-private memory is insufficient.",
+        "For behavior or interface changes, also maintain the relevant human guides and existing machine contracts."
+      ],
+      "sources": [
+        "AGENTS.md"
+      ],
+      "last_reviewed": "2026-11-02"
+    },
+    {
+      "id": "project-overview",
+      "title": "Mac Control architecture and documentation",
+      "kind": "project",
+      "summary": "Mac Control is a self-hosted macOS dashboard for controls, cooling, USB storage, and system activity.",
+      "details": [
+        "The server uses the Python standard library; native helpers use Objective-C and macOS frameworks; the frontend uses plain HTML, CSS, and JavaScript.",
+        "README.md describes user-facing behavior; docs/REFERENCE.md covers implementation and maintenance; docs/machines/mbp15.md is the machine runbook.",
+        "docs/API.md covers the full Mac Control HTTP API; packages/contracts/README.md identifies local API contracts and the separate Notifier exports.",
+        "DevBox Notifier is a separate optional service. Its integration guide is docs/integrations/mac-control.md; machine contracts live in packages/contracts/."
+      ],
+      "sources": [
+        "README.md",
+        "docs/REFERENCE.md",
+        "docs/integrations/mac-control.md",
+        "docs/API.md",
+        "packages/contracts/README.md"
+      ],
+      "last_reviewed": "2026-11-02"
+    },
+    {
+      "id": "api-interface",
+      "title": "Mac Control HTTP interface",
+      "kind": "project",
+      "summary": "Mac Control's full HTTP API and the first integration use case are documented in docs/API.md, packages/contracts/mac-control.openapi.json and packages/contracts/mac-control-api.json.",
+      "details": [
+        "The current implementation has 21 GET/POST operations under /api/. The API documentation revision is 1.1.0; the runtime has no negotiated API version or live OpenAPI route. Hardware response schemas remain extensible.",
+        "Requests require private/loopback/link-local source and known Host/port checks; cross-site fetches are rejected. POST requires an exact http://Host Origin and a JSON object from 1 through 4096 bytes, even for login and logout.",
+        "Private routes use the mac_control cookie, with fixed 24-hour normal or 30-day remembered expiry. Session inspection, sign-in, first setup and stats/leave do not require a valid session; setup requires loopback and leave can remove only the supplied cookie/viewer lease. There is no Mac Control bearer-token API.",
+        "Maintain the guide, local OpenAPI, API/use-case manifest and both memory files together as behavior changes. packages/contracts/openapi.json is the separate Notifier API, not the full Mac Control API."
+      ],
+      "sources": [
+        "server.py",
+        "auth.py",
+        "docs/API.md",
+        "packages/contracts/mac-control.openapi.json",
+        "packages/contracts/mac-control-api.json"
+      ],
+      "last_reviewed": "2026-11-02"
+    },
+    {
+      "id": "notifier-first-use-case",
+      "title": "First API integration: Notifier copy progress",
+      "kind": "project",
+      "summary": "The user identified DevBox Notifier copy progress as the first API integration use case; this does not establish a historical deployment date.",
+      "details": [
+        "The browser polls GET /api/file-activity with its Mac Control session. After authorization, the server pulls GET /v1/snapshot over fixed loopback using a private administrator bearer from configured state_dir/admin-token. Notifier does not POST activity into Mac Control; notifications/streaming are separate.",
+        "The bridge uses a two-second timeout, a 2 MiB response cap and no environment proxies. Caught upstream/configuration failures return HTTP 200 available=false with empty activity lists; this is not evidence that no copy is running.",
+        "Each visible authenticated client waits two seconds after request completion before polling again. The local UI shows up to eight qualifying active copies, overall progress and a current filename summary; unavailable/error responses hide the section. English operation/measured-detail filters can omit localized Finder observations. Window disappearance does not prove completion.",
+        "The separate Notifier repository owns the five exported version 1.1.0 activity contracts (2026-11-01). Local API/use-case documents describe this checkout; reading them is not a live check of the separate Notifier service."
+      ],
+      "sources": [
+        "docs/integrations/mac-control.md",
+        "mac_control_bridge.py",
+        "server.py",
+        "web/notifier-activity.js",
+        "packages/contracts/mac-control-api.json",
+        "packages/contracts/mac-control-integration.json"
+      ],
+      "last_reviewed": "2026-11-02"
+    },
+    {
+      "id": "mbp15-live-installation",
+      "title": "This checkout is the live installation",
+      "kind": "operational",
+      "summary": "The execution machine is mbp15, and this checkout is its live Mac Control installation according to the machine runbook.",
+      "details": [
+        "The checkout is /Users/paolo/personal/mac-control. The user launch agent is ~/Library/LaunchAgents/local.maccontrol.server.plist, label local.maccontrol.server; the dashboard uses port 8765.",
+        "Before managing the service, run python3 service.py status to verify the active location. Do not start a second server on port 8765 or move/remove the checkout while the launch agent points here.",
+        "Frontend changes are live. Python changes require a dashboard restart; native changes use the installer. Dashboard management does not require restarting privileged fan or input helpers. An input-helper restart resets both built-in inputs to On.",
+        "The old ~/Library/Application Support/Mac Control/.runtime compatibility symlink must remain for existing permission and notifier paths."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "docs/machines/mbp15.md",
+        "README.md"
+      ],
+      "last_reviewed": "2026-11-02"
+    },
+    {
+      "id": "private-local-state",
+      "title": "Preserve private runtime and backups",
+      "kind": "security",
+      "summary": "Runtime state and migration backups are private, untracked local data that must be preserved.",
+      "details": [
+        ".runtime/ contains credentials, sessions, settings, compiled helpers, and logs. .local-backups/ contains private migration backups.",
+        "Never commit, upload, copy into memory, or replace these directories with fixtures or another installation's state.",
+        "Preserve saved state and the existing compatibility symlink during updates."
+      ],
+      "sources": [
+        "AGENTS.md",
+        "docs/machines/mbp15.md",
+        ".gitignore"
+      ],
+      "last_reviewed": "2026-11-02"
+    },
+    {
+      "id": "verification-workflow",
+      "title": "Match checks to the change",
+      "kind": "workflow",
+      "summary": "Use the repository's documented checks when relevant; recording a command here does not mean it has been run.",
+      "details": [
+        "The Python test suite is python3 -m unittest discover.",
+        "Native build preflight is ./install.command --check.",
+        "Check the active installation with python3 service.py status before service management. Documentation-only work needs no service restart."
+      ],
+      "sources": [
+        "README.md",
+        "AGENTS.md",
+        "docs/machines/mbp15.md"
+      ],
+      "last_reviewed": "2026-11-02"
+    },
+    {
+      "id": "host-status-indicators",
+      "title": "Read-only host battery and Tailscale indicators",
+      "kind": "project",
+      "summary": "The dashboard has a compact host battery gauge and Tailscale status strip above System activity.",
+      "details": [
+        "GET /api/host-status requires a session and returns only battery and Tailscale summaries from read-only local commands; no peer or account data.",
+        "Reads use two-second command timeouts and a shared ten-second demand-driven cache. The visible authenticated browser polls ten seconds after completion; hidden, signed-out and unloaded pages pause polling.",
+        "Tailscale connected requires BackendState=Running and Self.Online=true. Missing CLI, login/approval needs, disconnected and unavailable states are explicit; unknown battery readings do not become zero."
+      ],
+      "sources": [
+        "host_status.py",
+        "server.py",
+        "web/host-status.js",
+        "web/index.html",
+        "docs/API.md",
+        "packages/contracts/mac-control.openapi.json"
+      ],
+      "last_reviewed": "2026-11-02"
+    }
+  ]
+}

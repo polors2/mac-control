@@ -71,6 +71,8 @@ The **Network** button shows the host's local addresses. Sign in with the dashbo
 
 Live CPU, Intel GPU, AMD GPU, RAM, and network graphs sit above power and energy. The dashboard uses a 16px body size, 14px secondary text and chart labels, larger headings and readings, and controls at least 44px tall. Charts draw at their displayed dimensions so labels remain readable at normal zoom. The dashboard fills the available width, uses content-sized cards, and keeps the desktop panels side by side down to laptop widths. Cards reflow into fewer columns on smaller screens. Main content scrolls below the header without a visible scroll track; wheel, touch, and keyboard scrolling remain available. Desktop shows controls, cooling, and drives together; mobile uses Controls, Inputs, Fans & temps, and USB drives tabs. Keyboard backlight and automatic brightness live inside Built-in Inputs. Hidden/closed pages still stop CPU/GPU/network graph sampling.
 
+**Host status:** a compact strip above System activity shows the Mac’s battery gauge, percentage, AC/battery source and charging state, plus Tailscale connection status. Low battery uses an amber gauge. Readings refresh every ten seconds while visible and signed in. Tailscale uses the installed CLI; missing, disconnected, sign-in/approval and unavailable states are shown explicitly. These are read-only indicators for the host Mac.
+
 ## Persistent Display Off
 
 **Graphics mode:** the header’s **Auto / Intel / AMD** selector reads the current macOS graphics policy. The dedicated GPU helper needs one administrator installation with `install-graphics-helper.command` (also included in `install.command`). After that, switching never prompts, including from another device. Auto enables automatic switching, Intel requests integrated graphics, and AMD requests discrete graphics. The setting applies on battery and AC power and is persisted by macOS. External displays require the discrete GPU. The selector confirms the saved policy, rather than which GPU each application is rendering with. Temporary status-read failures leave all three actions available, including Auto for recovery. The root-owned helper accepts only status and these three fixed modes over a private socket restricted to the installing user and root; it never runs browser-provided shell commands. Installing or restarting it preserves the current GPU policy and does not restart the fan/input helpers. `uninstall-graphics-helper.command` removes it while keeping the current policy.
@@ -192,9 +194,19 @@ The dashboard uses **HTTP for a trusted intranet**. Do not expose or port-forwar
 python3 server.py --host 127.0.0.1
 ```
 
+## API documentation
+
+Read the [HTTP API guide](docs/API.md) for authentication, request rules, all 21
+current operations, errors and a client example. Machine consumers can start with
+the [API/use-case manifest](packages/contracts/mac-control-api.json) and the full
+[Mac Control OpenAPI](packages/contracts/mac-control.openapi.json). The
+[contract index](packages/contracts/README.md) distinguishes these local contracts
+from the separate Notifier API bundle.
+
 ## Finder copy progress through DevBox Notifier
 
-The activity card can consume the separate DevBox Notifier service. The browser
+Our first API integration use case was copy progress from the separate DevBox
+Notifier service. The browser
 polls this server's session-protected `GET /api/file-activity`; this server then
 pulls `GET /v1/snapshot` from loopback port 8876 with a locally held credential.
 The notifier does not push into Mac Control. Existing controls continue to work
@@ -225,6 +237,11 @@ python3 -m unittest discover
 The checks cover authentication, preserved credentials, safe installer ordering, installed service paths, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, viewer-driven monitoring, and notifier bridge authentication/fallback behavior. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
 
 See [implementation and maintenance details](docs/REFERENCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+Human and AI contributors should start with [AGENTS.md](AGENTS.md) and the shared,
+provider-neutral memory: [MEMORY.md](MEMORY.md) for people and
+[MEMORY.json](MEMORY.json) for machine consumers. Keep both memory formats current
+together when project knowledge, decisions, preferences, or operations change.
 
 Copy progress shows only active copy names, overall percentage, transferred bytes/time remaining, and a current filename when available. Finder navigation/sidebar entries and empty per-file placeholders are hidden. Slider titles, percentages, and On/Off buttons use separate layout cells at every card width.
 

@@ -19,6 +19,7 @@ from auth import AuthStore, REMEMBER_SECONDS
 from controls import ControlManager
 from metrics import StatsMonitor
 from power import PowerMonitor
+from host_status import HostStatus
 from fans import FanController
 from graphics import GraphicsController
 from drives import DriveManager
@@ -38,6 +39,7 @@ AUTH = None
 CONTROLS = None
 STATS = None
 POWER = None
+HOST_STATUS = HostStatus()
 FANS = None
 DRIVES = None
 INPUTS = None
@@ -193,6 +195,10 @@ class Handler(BaseHTTPRequestHandler):
             except RuntimeError as error:
                 self.json(503, {'error': str(error)})
             return
+        if path == '/api/host-status':
+            if self.require_session():
+                self.json(200, HOST_STATUS.snapshot())
+            return
         if path == '/api/power':
             if self.require_session():
                 hours = parse_qs(urlsplit(self.path).query).get('hours', ['1'])[0]
@@ -244,6 +250,7 @@ class Handler(BaseHTTPRequestHandler):
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                  '/stats.js': ('stats.js', 'text/javascript; charset=utf-8'),
                  '/power.js': ('power.js', 'text/javascript; charset=utf-8'),
+                 '/host-status.js': ('host-status.js', 'text/javascript; charset=utf-8'),
                  '/drives.js': ('drives.js', 'text/javascript; charset=utf-8'),
                  '/inputs.js': ('inputs.js', 'text/javascript; charset=utf-8'),
                  '/favicon.svg': ('favicon.svg', 'image/svg+xml')}

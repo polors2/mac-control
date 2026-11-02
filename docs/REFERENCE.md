@@ -1,5 +1,11 @@
 # Mac Control: implementation and maintenance
 
+The [HTTP API guide](API.md) documents all current Mac Control routes, request
+checks, authentication, errors and the first integration use case. Its machine
+companions are the [full Mac Control OpenAPI](../packages/contracts/mac-control.openapi.json)
+and [API/use-case manifest](../packages/contracts/mac-control-api.json). See the
+[contract index](../packages/contracts/README.md) for artifact ownership.
+
 The separate [DevBox Notifier integration guide](integrations/mac-control.md)
 documents the activity card's browser → Mac Control → notifier pull path,
 endpoint/authentication inventory, polling behavior, private network exposure,
@@ -7,6 +13,18 @@ failure responses and machine-readable contract bundle. The bridge does not
 replace this server's existing telemetry, authentication or hardware controls.
 
 A private intranet dashboard for display brightness, keyboard backlight, sound, separate built-in keyboard and trackpad switches, fan control, CPU, Intel GPU, and AMD GPU temperatures, USB-drive mount controls, and live system activity. The controls are at the top; the temperatures sit beside the fan buttons. No cloud service, Docker, package install, CDN, or account is required.
+
+## Host battery and Tailscale indicators
+
+`host_status.py` provides authenticated `GET /api/host-status`. It uses read-only
+`/usr/bin/pmset -g batt` and `tailscale status --json --peers=false`, with two-second
+command timeouts and a shared, locked ten-second cache refreshed on demand. CLI
+discovery covers `/usr/local/bin`, `/opt/homebrew/bin`, the standard Tailscale app
+bundle and PATH. Connected requires Running plus Self.Online=true; only a summary
+is returned, without peers or account details. Failed reads replace previous data
+with explicit unavailable states. No privileged helper or Tailscale setting changes
+are needed. `web/host-status.js` polls every ten seconds after completion while
+visible and authenticated, discarding late responses on pause/sign-out.
 
 ## One-command install and update
 

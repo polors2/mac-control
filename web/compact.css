@@ -550,3 +550,17 @@ body.control-center{background:#edf2ef}
 }
 
 .control-center .power-section>.section-heading #power-daily-open{margin-left:auto}
+
+/* Compact, read-only host indicators stay above the activity cards. */
+.control-center .host-status-strip{display:flex;align-items:center;flex-wrap:wrap;gap:10px 24px;flex-shrink:0;padding:4px 0;color:#526358}
+.control-center .host-status-item{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:14px;line-height:1.5;min-width:0}
+.control-center .host-status-item strong{font-weight:600;font-variant-numeric:tabular-nums;color:#314e3b}
+.control-center .host-status-detail{color:#526358}
+.control-center .battery-gauge{width:34px;height:20px;flex-shrink:0;color:#50775b;stroke:none}
+.control-center .battery-bolt{display:none;fill:#314e3b;stroke:#edf2ef;stroke-width:1.5;stroke-linejoin:round}
+.control-center .is-charging .battery-bolt{display:block}
+.control-center .is-low .battery-gauge{color:#9a5b27}
+.control-center .tailscale-mark{width:20px;height:20px;flex-shrink:0;stroke:none}
+.control-center .tailscale-indicator{width:6px;height:6px;border-radius:50%;background:#89958d;flex-shrink:0}
+.control-center .is-connected .tailscale-indicator{background:#4d7b45;box-shadow:0 0 0 3px #4d7b4512}
+@media(max-width:700px){.control-center .host-status-strip{gap:8px 20px;padding:0}.control-center .host-status-item{gap:7px}.control-center .host-status-detail{font-size:13px}}

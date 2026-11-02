@@ -12,6 +12,7 @@
   <script src="/app.js" defer></script>
   <script src="/stats.js" defer></script>
   <script src="/power.js" defer></script>
+  <script src="/host-status.js" defer></script>
   <script src="/drives.js" defer></script>
   <script src="/inputs.js" defer></script>
   <link rel="stylesheet" href="/notifier-activity.css">
@@ -29,6 +30,16 @@
       <div class="header-actions"><span class="connection"><span class="status-dot"></span><span id="connection-label">Connecting</span></span><button id="network-device" class="button network-button"><span data-icon="devices"></span><span>Network</span><span class="arrow">↗</span></button><button id="logout" class="icon-button logout-button" aria-label="Sign out" title="Sign out" hidden><span data-icon="logout"></span></button></div>
     </header>
     <main tabindex="0" aria-label="Dashboard">
+      <div class="host-status-strip" aria-label="Host Mac status">
+        <div class="host-status-item" id="battery-status" role="status">
+          <svg class="battery-gauge" viewBox="0 0 34 20" aria-hidden="true"><rect x="1" y="3" width="28" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M32 8v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect id="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="m17 2-6 9h5l-1 7 7-10h-5l1-6Z"/></svg>
+          <span>Battery <strong id="battery-percent">—</strong></span><span class="host-status-detail" id="battery-detail">Sign in</span>
+        </div>
+        <div class="host-status-item" id="tailscale-status" role="status">
+          <svg class="tailscale-mark" viewBox="0 0 20 20" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="3" r="2" opacity=".35"/><circle cx="10" cy="3" r="2" opacity=".35"/><circle cx="17" cy="3" r="2" opacity=".35"/><circle cx="3" cy="10" r="2"/><circle cx="10" cy="10" r="2"/><circle cx="17" cy="10" r="2"/><circle cx="3" cy="17" r="2" opacity=".35"/><circle cx="10" cy="17" r="2"/><circle cx="17" cy="17" r="2" opacity=".35"/></g></svg>
+          <span>Tailscale</span><span class="tailscale-indicator" aria-hidden="true"></span><strong id="tailscale-label">Sign in</strong>
+        </div>
+      </div>
 <section class="stats-section" aria-label="Live system statistics">
         <div class="section-heading"><h2>System activity</h2><span class="stats-status" id="stats-status"><i></i><span>Waiting for your Mac</span></span></div>
         <div class="stats-grid">
