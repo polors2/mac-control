@@ -142,6 +142,22 @@ class HTTPAuthenticationTests(unittest.TestCase):
                 self.assertEqual(self.request('/api/control', {'control': 'displaySleep', 'value': value}, cookie=cookie)[0], 200)
             self.assertEqual(hardware.call_args.args, ('set', 'displaySleep', '1'))
 
+    def test_drive_unlock_password_requires_session_and_same_origin(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        target='11111111-1111-4111-8111-111111111111'
+        body={'id':target,'mounted':True,'password':'fixture-only-unlock'}
+        manager=SimpleNamespace(set_mounted=Mock(return_value={'drives':[]}))
+        with patch.object(server,'DRIVES',manager):
+            self.assertEqual(self.request('/api/drives',body)[0],401)
+            manager.set_mounted.assert_not_called()
+            _,headers,_=self.request('/api/session',{'password':self.password})
+            cookie=headers['Set-Cookie'].split(';',1)[0]
+            self.assertEqual(self.request('/api/drives',body,cookie=cookie,origin='http://untrusted.test')[0],403)
+            manager.set_mounted.assert_not_called()
+            self.assertEqual(self.request('/api/drives',body,cookie=cookie)[0],200)
+            manager.set_mounted.assert_called_once_with(target,True,password='fixture-only-unlock')
+
     def test_unremembered_login_uses_browser_session_cookie(self):
         status, headers, _ = self.request('/api/session', {'password': self.password, 'remember': False})
         self.assertEqual(status, 200)

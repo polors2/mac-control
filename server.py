@@ -319,7 +319,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.json(200, result)
                 return
             elif path == '/api/drives':
-                try: result = DRIVES.set_mounted(body.get('id'), body.get('mounted'))
+                try: result = DRIVES.set_mounted(body.get('id'), body.get('mounted'), password=body.get('password'))
                 except ValueError as error:
                     self.json(400, {'error': str(error)})
                     return

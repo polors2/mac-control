@@ -127,8 +127,11 @@ function render() {
   const displaySleep=desired.has('displaySleep') ? !!desired.get('displaySleep'):!!state?.displaySleep;
   $('#display-sleep').disabled=!online || !capabilities.displaySleep;
   $('#display-sleep').setAttribute('aria-pressed',String(displaySleep));
-  $('#display-sleep .state-label').textContent=displaySleep ? 'On':'Off';
-  $('#display-sleep-note').textContent=state?.displaySleepError ? 'Could not keep display asleep':displaySleep ? 'Display off · saved across restarts':'Saved across restarts · resumes after login';
+  const wakeAction=desired.has('displaySleep') ? displaySleep:displaySleep || !!state?.displayAsleep;
+  $('#display-sleep .state-label').textContent=wakeAction ? 'Wake':'Sleep';
+  $('#display-sleep').setAttribute('aria-label',wakeAction ? 'Wake display':'Put display to sleep');
+  $('#display-sleep').title='Your display sleep choice is restored after login.';
+  $('#display-sleep-note').textContent=state?.displaySleepError ? 'Display sleep unavailable':!state ? 'Checking display…':desired.has('displaySleep') ? displaySleep ? 'Putting display to sleep…':'Waking display…':displaySleep ? 'Sleeping · stays off':state.displayAsleep ? 'Asleep':'Awake';
   const auto = desired.has('keyboardPower') && !desired.get('keyboardPower') ? false : desired.has('keyboardAuto') ? !!desired.get('keyboardAuto'):!!state?.keyboardAuto;
   $('#keyboard-auto').disabled = !online || !capabilities.keyboardAuto;
   $('#keyboard-auto').setAttribute('aria-pressed',String(auto));
@@ -196,7 +199,7 @@ document.querySelectorAll('[data-step]').forEach(button => button.addEventListen
 }));
 document.querySelectorAll('[data-max]').forEach(button => button.addEventListener('click',()=>enqueue(button.dataset.max,100,true)));
 document.querySelectorAll('[data-power]').forEach(button=>button.addEventListener('click',()=>enqueue(`${button.dataset.power}Power`,button.getAttribute('aria-pressed')!=='true',true)));
-$('#display-sleep').addEventListener('click',()=>enqueue('displaySleep',Number(!(desired.has('displaySleep') ? desired.get('displaySleep'):state.displaySleep)),true));
+$('#display-sleep').addEventListener('click',()=>enqueue('displaySleep',Number(!(desired.has('displaySleep') ? desired.get('displaySleep'):state.displaySleep || state.displayAsleep)),true));
 $('#keyboard-auto').addEventListener('click',()=>enqueue('keyboardAuto',Number(!(desired.has('keyboardAuto') ? desired.get('keyboardAuto'):state.keyboardAuto)),true));
 document.querySelectorAll('[data-preset]').forEach(button => button.addEventListener('click',()=>{
   const preset = presets[button.dataset.preset];
