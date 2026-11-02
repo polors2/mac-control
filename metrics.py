@@ -43,7 +43,12 @@ def sample_delta(previous, current):
     busiest = max(reporting, key=lambda gpu: gpu['percent']) if reporting else None
     intel = next((gpu for gpu in gpus if gpu.get('vendor') == 'intel' or 'intel' in gpu.get('name', '').lower()), None)
     amd = next((gpu for gpu in gpus if gpu.get('vendor') == 'amd' or 'amd' in gpu.get('name', '').lower()), None)
+    memory = current.get('memory')
+    valid_memory = (isinstance(memory, dict) and numeric(memory.get('used')) and numeric(memory.get('total'))
+                    and 0 <= memory['used'] <= memory['total'] and memory['total'] > 0)
     return {'time': current['time'], 'cpu': cpu,
+            'ram': round(100 * memory['used'] / memory['total'], 1) if valid_memory else None,
+            'memory': memory if valid_memory else None,
             'gpu': busiest['percent'] if busiest else None,
             'gpuName': busiest['name'] if busiest else None,
             'gpuReporting': len(reporting), 'gpuDetected': len(gpus),

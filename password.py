@@ -3,6 +3,7 @@
 import getpass
 from pathlib import Path
 from auth import AuthStore
+import service
 
 
 def main():
@@ -10,10 +11,8 @@ def main():
     if password != getpass.getpass('Confirm password: '):
         raise SystemExit('Passwords did not match. Nothing changed.')
     root = Path(__file__).resolve().parent
-    managed = Path.home() / 'Library' / 'Application Support' / 'Mac Control'
-    agent = Path.home() / 'Library' / 'LaunchAgents' / 'local.maccontrol.server.plist'
-    if agent.exists() and (managed / '.runtime' / 'auth.sqlite3').exists():
-        root = managed
+    if service.AGENT.exists():
+        root = service.deployment_root()
     auth = AuthStore(root / '.runtime' / 'auth.sqlite3')
     try:
         auth.set_password(password)

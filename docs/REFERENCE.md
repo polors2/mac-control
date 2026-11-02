@@ -16,7 +16,7 @@ From a checkout of this repository, run as your normal Mac user:
 ./install.command
 ```
 
-This builds all six native helpers (brightness/audio/media, a display-only Off guard, metrics, USB drives, fans, and built-in inputs), installs the privileged fan and input services, deploys the dashboard, enables automatic startup, guides macOS permissions, and opens the dashboard. It asks for a new dashboard password only on first setup. Existing passwords, remembered sign-ins, saved levels, and unchanged helper installations are preserved. Administrator authentication is requested once when privileged helpers need installation or replacement. Do not run the entire installer with sudo; the web service runs as your normal user.
+This builds all seven native helpers (brightness/audio/media, a display-only Off guard, metrics, USB drives, fans, built-in inputs, and graphics), installs the privileged fan, input, and graphics services, deploys the dashboard, enables automatic startup, guides macOS permissions, and opens the dashboard. It asks for a new dashboard password only on first setup. Existing passwords, remembered sign-ins, saved levels, and unchanged helper installations are preserved. Administrator authentication is requested once when privileged helpers need installation or replacement. Do not run the entire installer with sudo; the web service runs as your normal user.
 
 Requirements: macOS 13 or later and Apple Command Line Tools. If the tools are missing, the command opens Apple's installer; finish it and run the same command again. Hardware support is verified on this Intel MacBook Pro; other models can expose different fan, sensor, and input interfaces.
 
@@ -52,7 +52,7 @@ Use the full installer above for initial setup. To start an already installed da
 
 The first start installs a per-user launchd service. It starts automatically at login, restarts if it exits, and continues independently of Terminal, Codex, the browser, and VNC connections. It creates its own sleep-prevention assertions while running; it does not depend on Screen Sharing keeping the Mac awake. The display may still sleep. This is a login service, so the Mac user must sign in after a reboot; shutdown, explicit system sleep, and lid-close sleep are not overridden.
 
-The deployed application is stored in `~/Library/Application Support/Mac Control`; its launch agent is `~/Library/LaunchAgents/local.maccontrol.server.plist`. Saved passwords, sessions, restoration levels, compiled helpers, and logs live in the deployed `.runtime/` directory, private to your Mac user. Moving or archiving the original source folder does not stop the deployed service.
+The default installation is stored in `~/Library/Application Support/Mac Control`; its launch agent is `~/Library/LaunchAgents/local.maccontrol.server.plist`. Saved passwords, sessions, restoration levels, compiled helpers, and logs live in the active installation's `.runtime/` directory, private to your Mac user. A service installed directly in a checkout runs from that checkout instead; keep that folder at its installed path. `python3 service.py status` reports the active paths. See [the mbp15 runbook](machines/mbp15.md) for this machine's checkout installation.
 
 Commands from the source or deployed application folder:
 
@@ -60,16 +60,18 @@ Commands from the source or deployed application folder:
 /usr/bin/python3 service.py status
 /usr/bin/python3 service.py stop
 /usr/bin/python3 service.py start
+/usr/bin/python3 service.py restart
 /usr/bin/python3 service.py update
 /usr/bin/python3 service.py uninstall
 ```
 
-**Stop** stops the dashboard and releases its sleep assertions; automatic startup remains enabled for the next login. **Uninstall** removes automatic startup and retains saved data. **Update** deploys the current source and restarts the service while preserving the deployed authentication database and settings. For a temporary foreground server without automatic startup, run `python3 server.py` directly.
+**Stop** stops the dashboard and releases its sleep assertions; automatic startup remains enabled for the next login. **Restart** restarts only the dashboard. **Uninstall** removes automatic startup and retains saved data. **Update** uses the existing installation location and restarts the service while preserving its authentication database and settings. For a checkout installation, it keeps running from that checkout. For a temporary foreground server without automatic startup, first stop the service, then run `python3 server.py` directly.
 
 To change or reset the password, run `python3 password.py`. It automatically targets the deployed database when the persistent service is installed and signs out all devices. Passwords are salted PBKDF2 hashes; session tokens are also hashed. Passwords are never saved in browser local storage.
 
 ## Controls
 
+- **Graphics selector:** Auto / Intel / AMD in the header selects the macOS GPU policy on battery and AC power. Install the dedicated helper once with `install-graphics-helper.command` (included in the full installer); switching modes then works without password prompts. It accepts only the three fixed modes and status via a private socket for the installing user and root. A temporary status-read failure cannot block switching back to Auto. Starting or updating the helper preserves the GPU policy and does not restart the fan/input helpers. External displays require discrete graphics. `uninstall-graphics-helper.command` removes the helper without changing the selected policy.
 - **Display / keyboard switches:** Off sets brightness to 0%; On restores the last positive level. The display switch adjusts brightness rather than sleeping the Mac. Off saves a separate `displayOff` flag and starts a small brightness-only guard, which corrects macOS/VNC resets back to zero within about two seconds even without viewers. On/nonzero brightness releases and reaps that guard before writing the new level. The previous positive level is protected from reset drift. The flag survives dashboard-service restarts; no new administrator setup is needed. Keyboard Off also pauses automatic keyboard brightness, and On restores its previous automatic setting. Ambient light can override the visible keyboard illumination; the dashboard reports that condition.
 - **Sound switch:** Off mutes without changing the saved volume; On unmutes and restores the last positive volume if it was set to zero. The volume slider preserves mute. Unsupported audio outputs show unavailable controls.
 - **Presets:** Workday sets 75% display, 45% keys, 30% sound and unmutes. After hours sets 35%, 25%, 15% and unmutes. Quiet time sets 50%, 30%, 0% and mutes. Only supported controls are applied. A hardware error is reported; prior successful operations remain applied.
@@ -98,22 +100,63 @@ macOS requires administrator access for fan writes. On a fresh installation, dou
 CPU, Intel GPU, and AMD GPU temperatures come from separate AppleSMC sensors and are displayed prominently with the fan controls. Sensor labels identify CPU die/proximity, Intel GPU, and AMD GPU diode/proximity. The Radeon Pro 560 is shown even while macOS powers it down, with an explicit sleeping state. Available SMC temperatures remain labeled with the sensor and sleeping state. Missing sensors remain unavailable; values are not simulated. The sensor/fan implementation is verified on this Intel MacBook Pro; other Mac models and macOS versions can expose different keys.
 
 
-### Target-temperature curve
+### Predictive target-temperature control
 
-The base curve uses the difference between current CPU temperature and the chosen target:
+Version 4 of the fan helper forecasts CPU temperature 20 seconds ahead, aiming
+2–5°C below the selected target. Every two seconds it samples CPU die temperature,
+CPU utilization, and each fan's actual RPM. It learns a first-order thermal model:
 
-| CPU relative to target | Fraction of available RPM range |
-| --- | --- |
-| 15°C or more below | 0% (firmware minimum RPM) |
-| 10°C below | 15% |
-| 5°C below | 35% |
-| At target | 60% |
-| 3°C above | 85% |
-| 6°C or more above | 100% (firmware maximum RPM) |
+```text
+dT/dt = a + b × (T − 40)/40 + c × CPU_load − d × actual_fan_fraction
+T_forecast = T + 20 × heating_rate
+fan_fraction = clamp(actual_fan_fraction + (T_forecast − (target − headroom)) / (20 × d), 0, 1)
+RPM_i = minimum_i + fan_fraction × (maximum_i − minimum_i)
+```
 
-Interpolation is continuous. A bounded adaptive term responds to sustained temperature error. Cooling increases quickly and decreases gently, so the controller settles over time instead of rapidly changing fan speed. All targets stay between each fan’s firmware minimum and maximum. CPU readings at 90°C or above force maximum cooling; an unavailable sensor or failed write returns management to Apple. This is a cooling goal: workload and room temperature determine what temperature can be reached.
+Load and fan fractions run from 0 to 1. The coefficients use exponentially
+weighted least squares with a ten-minute decay time, a regularized starting
+model, and physical bounds. This small online fit uses the
+[standard forgetting approach](https://www.mathworks.com/help/ident/ref/recursivels-system-object.html)
+to give recent performance more influence. The heating rate uses the measured
+trend and rising CPU load; unmodeled heat, such as GPU activity, is captured in
+the temperature trend. Thermal-model error increases headroom up to 5°C. A temperature
+floor keeps cooling available near the goal even during a brief falling reading.
 
-Target mode requires **version 2 of the fan helper**; Constant mode requires **version 3**. If the dashboard says to update it, run `install-fan-helper.command` again on the host Mac and approve the replacement locally. Auto and Max continue working with the older helper.
+Fan demand increases by at most 15 percentage points per second and decreases
+by at most 1.5 points per second. At the target, or at 90°C, maximum cooling
+bypasses the ramp limits. Each fan stays within its firmware RPM limits. Missing
+CPU temperature or fan feedback, or a failed write, returns management to Apple.
+Sleep/sampling gaps discard stale trends and resume conservatively. The target
+is a cooling goal; sudden workload spikes and insufficient cooling capacity can
+still cause it to be exceeded.
+
+The root-private file `/var/db/local.maccontrol/fan-learning.json` stores a model
+checkpoint (fitted coefficients, accumulated fit statistics, error estimate, and
+learned-sample count) independently of its raw sample list. Each usable interval
+is used for learning immediately. The last 300 raw thermal/load/fan samples
+(about ten minutes) remain capped for low overhead; raw records older than
+24 hours are removed automatically. Existing sample-only logs are learned from
+before any expiration. Checkpointed samples are never replayed a second time.
+
+The helper saves at most once per minute and on normal shutdown. It flushes a
+private temporary file to disk, then atomically replaces the checkpoint and raw
+log together, so cleanup retains the learned statistics. A failed save leaves
+the previous file intact, keeps session learning active, reports a warning, and
+retries on the next maintenance pass. On restart it restores the model and
+continues fitting new observations while discarding stale trends and starting
+in Apple Auto. Learning persists even when the raw log becomes empty; new
+observations still receive greater weight so the controller continues adapting.
+
+Cleanup runs on startup and once per minute in every fan mode, including when
+Target is disabled, without taking extra telemetry samples. The fan uninstaller
+removes the checkpoint and raw log. They contain no dashboard credentials,
+network counters, or file activity.
+
+Target mode works with helper version 2 and newer; predictive Target needs
+**version 4**. The dashboard identifies older Target as a legacy curve and offers
+the helper update. Constant mode still requires version 3. Run
+`install-fan-helper.command` on the host Mac to install version 4; it preserves
+the previously selected fan mode. This update does not restart the input helper.
 
 ### USB hard drives
 
@@ -137,7 +180,15 @@ Graphs retain the last two minutes:
 - GPUs: separate Intel HD Graphics 630 and AMD Radeon Pro 560 cards, each with its own utilization history and power state. Device names come from the PCI registry. macOS AGC explicitly reports when a GPU is powered down; a sleeping GPU has zero utilization and is labeled Sleeping. When active, each card uses that GPU’s own driver counter, with no substitution from the other GPU. A missing active counter is shown as unavailable. Monitoring does not request a Metal device or wake the discrete GPU.
 - Network: separate download/upload byte rates, summed over active physical IP interfaces using 64-bit counters and elapsed sample time. VPN, loopback, and peer-to-peer virtual interfaces are excluded to avoid duplicate traffic.
 
-Temperature and RPM display readings use the same viewer-driven sampler. In Auto, Constant, and Max, the fan helper blocks waiting for a command while idle. In Target, it performs a lightweight CPU-temperature check every two seconds even with the page closed, because cooling regulation must continue. It updates RPM targets when needed; the graphs and network/GPU monitoring still pause without viewers. Missing samples create gaps, not invented data.
+Temperature and RPM display readings use the same viewer-driven sampler. In Auto, Constant, and Max, the fan helper waits for commands, waking once per minute only for log retention while idle. In Target, it samples CPU temperature, CPU load, and actual fan RPM every two seconds even with the page closed, because cooling regulation must continue. It updates RPM targets when needed; the graphs and network/GPU monitoring still pause without viewers. Missing samples create gaps, not invented data.
+
+## Persistent power and energy
+
+`power.py` runs a separate ten-second background sampler using `metrics --power`, which reads only SMC `PSTR` (System Total). On mbp15 this is signed fixed-point `sp87`; power is decoded in watts without polling CPU, GPU, network, thermals, or fan registers. This sensor is internal system power, excluding charger conversion losses. Sensor-key references follow [Stats](https://github.com/exelban/stats/blob/master/Modules/Sensors/values.swift).
+
+The authenticated `GET /api/power?hours=1|12|24` endpoint returns current watts, chart history, today's cumulative Wh, recorded seconds, and daily totals. Invalid windows return 400. The browser requests it every ten seconds while visible; backend logging continues without viewers. The current value is unavailable after 25 seconds without a valid reading. Chart bucketing preserves gaps and averages power values within continuous segments.
+
+Private `.runtime/power.sqlite3` (0600 inside 0700 `.runtime`) retains 24 hours of raw readings and 90 calendar days of daily totals, including today. Daily boundaries use `Asia/Manila`, independently of the host or viewer timezone. Trapezoidal energy integration divides watt-seconds by 3600 and splits intervals at midnight. Intervals over 25 seconds, missing readings, wall/monotonic clock disagreement, or service restarts do not accumulate assumed energy. Saved totals survive restarts; no pre-install history is invented. Daily rows include recorded seconds, making partial coverage visible. The dashboard shows a separate midnight-to-now cumulative graph and a daily log dialog with a line chart and an expandable table.
 
 ## Local access boundary
 
@@ -163,8 +214,10 @@ Selected display brightness/Off, keyboard backlight/auto mode, sound level/mute,
 
 USB cards list only currently connected eligible user drives, including unmounted drives available to remount. Saved UUID preferences do not create disconnected cards or duplicates after a reformat. EFI system partitions are excluded using both their media label and partition-type identifier.
 
-The compact Control Center layout puts activity graphs first and groups backlight/automatic brightness with Built-in Inputs. Mobile tabs keep controls, cooling, and USB drives accessible within the viewport, with panel scrolling for smaller windows or long lists. The separate Keep display off toggle saves `displaySleep` in the private control settings. It requests macOS display sleep (including attached displays) and supervises a small display-only guard while enabled. Turning it off wakes the display and restores positive brightness; a positive brightness/preset request also clears sleep intent. Both choices survive service restart and reboot followed by login. Startup never replays physical keyboard/trackpad Off states. Actual display sleep, external-wake correction, release, and restoration after dashboard-service restart were checked live.
+The Control Center layout puts activity graphs first and groups backlight/automatic brightness with Built-in Inputs. Typography uses 16px body text, a 14px minimum for secondary labels and chart axes, and larger headings and values. Buttons and switches have at least 44px targets. The shell fills the window width without a maximum-width cap. Cards reflow with viewport width; compact reading rows remove reserved whitespace while retaining the readable type scale. The main content scrolls below the header with scrollbar tracks hidden. Expanded charts also fill the available width, with summaries arranged across the dialog. Mobile tabs expose controls, inputs, cooling, and USB drives. Click or tap a System activity block to open a larger live chart with current, average, and peak values. Escape, the close button, or tapping the backdrop closes it and restores focus. The separate Keep display off toggle saves `displaySleep` in the private control settings. It requests macOS display sleep (including attached displays) and supervises a small display-only guard while enabled. Turning it off wakes the display and restores positive brightness; a positive brightness/preset request also clears sleep intent. Both choices survive service restart and reboot followed by login. Startup never replays physical keyboard/trackpad Off states. Actual display sleep, external-wake correction, release, and restoration after dashboard-service restart were checked live.
 
-Panel stacks use content-sized cards with no fixed reserved height. Auto/Max cooling stays compressed; Target/Constant controls and additional drives expand their own stack as needed. Graph traces stretch across their small chart areas. On small windows, the panel area can scroll while the activity overview stays above it.
+Panel stacks use content-sized cards. Target/Constant controls and additional drives expand their own stack as needed. SVG chart coordinates match each rendered chart size, so axis labels keep their 14px display size in both overview cards and expanded dialogs. Resizing redraws the charts. The activity grid uses five, three, or two columns; power charts become full-width cards on mobile. Dialog copy, daily tables, helper instructions, and file-transfer progress use the same readable type scale.
 
 Encrypted APFS volumes can be unlocked from the password dialog. Passwords are passed through stdin to the fixed native USB helper and macOS diskutil, never argv or saved state. Both layers validate eligible external USB identity before unlock; line breaks/NUL/oversize inputs are rejected. APFS lock metadata is read only for unmounted candidates. Mounting targets eligible volumes instead of the synthetic APFS container. Locked saved selections wait for manual password entry rather than repeatedly attempting unlock at startup. UI retry/success/field-clearing flows are tested against simulated encrypted volumes; connected user drives were left mounted throughout validation.
+
+Daily energy history uses a fixed 90-calendar-day line chart. Lines connect consecutive recorded days and break across unrecorded days; missing dates are never plotted as zero. Zero-energy days remain valid points. Today is an open point, with partial-day coverage labeled. The dialog shows logged total, recorded-day count, and today’s energy; the table is available under Daily values. The overview groups current draw in the power header above two equal-width plots.

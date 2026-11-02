@@ -95,6 +95,7 @@ class HTTPAuthenticationTests(unittest.TestCase):
         self.assertFalse(session['authenticated'])
         self.assertEqual(self.request('/api/state')[0], 401)
         self.assertEqual(self.request('/api/stats')[0], 401)
+        self.assertEqual(self.request('/api/power')[0], 401)
         self.assertEqual(self.request('/api/fans', {'mode': 'max'})[0], 401)
         self.assertEqual(self.request('/api/inputs')[0], 401)
         self.assertEqual(self.request('/api/inputs', {'device': 'keyboard', 'enabled': False})[0], 401)
@@ -103,6 +104,21 @@ class HTTPAuthenticationTests(unittest.TestCase):
     def test_incorrect_password_and_cross_origin_rejected(self):
         self.assertEqual(self.request('/api/session', {'password': 'wrong'})[0], 401)
         self.assertEqual(self.request('/api/session', {'password': self.password}, origin='http://untrusted.test')[0], 403)
+
+    def test_power_history_ranges_require_auth_and_reject_invalid_windows(self):
+        from unittest.mock import Mock
+        monitor = Mock()
+        monitor.snapshot.return_value = {'watts': 36, 'history': [], 'daily': []}
+        with patch.object(server, 'POWER', monitor):
+            _, headers, _ = self.request('/api/session', {'password': self.password})
+            cookie = headers['Set-Cookie'].split(';', 1)[0]
+            for hours in (1, 12, 24):
+                code, _, data = self.request(f'/api/power?hours={hours}', cookie=cookie)
+                self.assertEqual(code, 200)
+                self.assertEqual(data['watts'], 36)
+                monitor.snapshot.assert_called_with(hours)
+            for invalid in ('0', '2', '-1', 'abc', '1.0'):
+                self.assertEqual(self.request(f'/api/power?hours={invalid}', cookie=cookie)[0], 400)
 
     def test_input_endpoint_requires_boolean_and_reports_missing_helper(self):
         from inputs import InputController
@@ -129,6 +145,22 @@ class HTTPAuthenticationTests(unittest.TestCase):
         self.assertTrue(self.request('/api/session', cookie=token_cookie)[2]['authenticated'])
         self.assertEqual(self.request('/api/logout', {}, cookie=token_cookie)[0], 200)
         self.assertFalse(self.request('/api/session', cookie=token_cookie)[2]['authenticated'])
+
+    def test_graphics_changes_require_session_origin_and_valid_mode(self):
+        from graphics import GraphicsController
+        from unittest.mock import Mock
+        controller = GraphicsController(Mock())
+        with patch.object(server, 'GRAPHICS', controller):
+            self.assertEqual(self.request('/api/graphics', {'mode': 'amd'})[0], 401)
+            _, headers, _ = self.request('/api/session', {'password': self.password})
+            cookie = headers['Set-Cookie'].split(';', 1)[0]
+            self.assertEqual(self.request('/api/graphics', {'mode': 'amd'}, cookie=cookie, origin='http://untrusted.test')[0], 403)
+            for mode in (None, [], {}, True, 'shell'):
+                self.assertEqual(self.request('/api/graphics', {'mode': mode}, cookie=cookie)[0], 400)
+            controller.runner.assert_not_called()
+            with patch.object(controller, 'set_mode', return_value={'available': True, 'mode': 'amd'}) as change:
+                self.assertEqual(self.request('/api/graphics', {'mode': 'amd'}, cookie=cookie)[2]['mode'], 'amd')
+                change.assert_called_once_with('amd')
 
     def test_display_sleep_is_authenticated_and_accepts_only_zero_or_one(self):
         self.assertEqual(self.request('/api/control', {'control': 'displaySleep', 'value': 1})[0], 401)

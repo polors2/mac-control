@@ -8,6 +8,7 @@ const paths = {
   power:'<path d="M12 2v10M6 5a9 9 0 1 0 12 0"/>',
   cpu:'<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v3m6-3v3M9 19v3m6-3v3M2 9h3m-3 6h3m14-6h3m-3 6h3"/>',
   gpu:'<rect x="2" y="5" width="20" height="13" rx="2"/><circle cx="10" cy="11.5" r="3.5"/><path d="M16 9h3m-3 4h3M6 18v3m3-3v3m3-3v3m3-3v3"/>',
+  memory:'<rect x="2" y="6" width="20" height="11" rx="2"/><path d="M6 9v5m4-5v5m4-5v5m4-5v5M5 17v3m4-3v3m6-3v3m4-3v3"/>',
   network:'<path d="M12 3v11m-4-4 4 4 4-4M4 17v4h16v-4M3 4l3-1m12 0 3 1"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   'sun-small':'<circle cx="12" cy="12" r="3"/><path d="M12 5V4m0 16v-1M5 12H4m16 0h-1M6.3 6.3l-.7-.7m12.8 12.8-.7-.7M6.3 17.7l-.7.7M17.7 6.3l.7-.7"/>',
@@ -90,6 +91,13 @@ function controlLevel(control) {
 
 function render() {
   const capabilities = state?.capabilities || {};
+  const graphicsMode=desired.get('graphicsMode') ?? state?.graphics?.mode;
+  $('#graphics-toggle').setAttribute('aria-busy',String(desired.has('graphicsMode')));
+  $('#graphics-toggle').title=state?.graphics?.error || (state?.graphics?.installed ? 'Graphics mode · Auto / integrated Intel / discrete AMD':'GPU controls need one-time setup: run install-graphics-helper.command on the host Mac');
+  document.querySelectorAll('[data-graphics]').forEach(button=>{
+    button.disabled=!online || !state?.graphics?.installed || busy || pending.size>0;
+    button.setAttribute('aria-pressed',String(button.dataset.graphics===graphicsMode));
+  });
   for (const control of sliders) {
     const supported = !!capabilities[control];
     const value = controlLevel(control);
@@ -171,7 +179,13 @@ async function drain() {
     try {
       const power=control.endsWith('Power');
       const baseControl=power ? control.slice(0,-5):control;
-      state = await api(power ? '/api/toggle':'/api/control',power ? {control:baseControl,enabled:!!value}:{control,value});
+      if(control==='graphicsMode') {
+        const graphics=await api('/api/graphics',{mode:value},40000);
+        state={...state,graphics};
+        toast(`${{auto:'Automatic',intel:'Intel',amd:'AMD'}[value]} graphics mode selected.`);
+      } else {
+        state = await api(power ? '/api/toggle':'/api/control',power ? {control:baseControl,enabled:!!value}:{control,value});
+      }
       if (!pending.has(control)) {
         desired.delete(control);
         const card = $(`[data-control="${baseControl}"]`);
@@ -193,6 +207,9 @@ sliders.forEach(control => {
   $(`#${control}`).addEventListener('input',event => enqueue(control,Number(event.target.value)));
   $(`#${control}`).addEventListener('change',()=>{clearTimeout(drainTimer);drain();});
 });
+document.querySelectorAll('[data-graphics]').forEach(button=>button.addEventListener('click',()=>{
+  if(button.dataset.graphics!==state?.graphics?.mode) enqueue('graphicsMode',button.dataset.graphics,true);
+}));
 document.querySelectorAll('[data-step]').forEach(button => button.addEventListener('click',()=>{
   const [control,step] = button.dataset.step.split(':');
   enqueue(control,Math.max(0,Math.min(100,(desired.get(control) ?? state[control])+Number(step))),true);
@@ -296,7 +313,10 @@ $('#media-help').addEventListener('click',async()=>{
 });
 document.querySelectorAll('dialog:not(#auth-dialog)').forEach(dialog=>dialog.addEventListener('click',event=>{
   const box=dialog.getBoundingClientRect();
-  if (event.target===dialog && (event.clientX<box.left || event.clientX>box.right || event.clientY<box.top || event.clientY>box.bottom)) dialog.close();
+  if (event.target===dialog && (event.clientX<box.left || event.clientX>box.right || event.clientY<box.top || event.clientY>box.bottom)) {
+    if(dialog.id==='activity-dialog') closeActivity();
+    else dialog.close();
+  }
 }));
 document.addEventListener('visibilitychange',()=>{
   document.body.classList.toggle('is-background',document.hidden);

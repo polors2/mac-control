@@ -22,6 +22,26 @@ static id cpuTicks(void) {
              @(info.cpu_ticks[CPU_STATE_IDLE]), @(info.cpu_ticks[CPU_STATE_NICE])];
 }
 
+static id memoryStats(void) {
+    uint64_t total = 0;
+    size_t size = sizeof(total);
+    if (sysctlbyname("hw.memsize", &total, &size, NULL, 0) != 0 || !total) return NSNull.null;
+    vm_statistics64_data_t info = {0};
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    vm_size_t pageSize = 0;
+    mach_port_t host = mach_host_self();
+    kern_return_t pages = host_page_size(host, &pageSize);
+    kern_return_t result = host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&info, &count);
+    mach_port_deallocate(mach_task_self(), host);
+    if (pages != KERN_SUCCESS || result != KERN_SUCCESS || !pageSize) return NSNull.null;
+    // Anonymous app memory, less reclaimable purgeable pages, plus wired and
+    // physically compressed memory. File caches and swap are not RAM in use.
+    uint64_t appPages = info.internal_page_count > info.purgeable_count ? info.internal_page_count - info.purgeable_count : 0;
+    uint64_t used = MIN(total, (appPages + (uint64_t)info.wire_count + info.compressor_page_count) * pageSize);
+    return @{@"used": @(used), @"total": @(total),
+             @"compressed": @((uint64_t)info.compressor_page_count * pageSize)};
+}
+
 static id networkCounters(void) {
     // Count physical IP interfaces once; exclude loopback and VPN tunnel duplicates.
     NSMutableSet *active = NSMutableSet.set;
@@ -111,12 +131,33 @@ static NSArray *gpuStats(void) {
     return result;
 }
 
-int main(void) {
+// PSTR is the SMC System Total power sensor (Stats sensor-key reference).
+// A separate mode keeps background energy logging independent of GPU/network polling.
+static id systemPower(void) {
+    io_connect_t connection = mcOpen();
+    MCValue value = {0};
+    double watts = connection && mcRead(connection, "PSTR", &value) ? mcNumber(value) : NAN;
+    // mbp15 exposes PSTR as signed fixed-point sp87: 8 integer / 7 fraction bits.
+    if (value.info.type == mcKey("sp87") && value.info.size == 2)
+        watts = (int16_t)((value.bytes[0] << 8) | value.bytes[1]) / 128.0;
+    if (connection) IOServiceClose(connection);
+    return isfinite(watts) && watts >= 0 && watts <= 1000 ? @(watts) : (id)NSNull.null;
+}
+
+int main(int argc, const char *argv[]) {
     @autoreleasepool {
         struct timespec now; clock_gettime(CLOCK_MONOTONIC, &now);
+        if (argc == 2 && strcmp(argv[1], "--power") == 0) {
+            NSDictionary *power = @{@"time": @([NSDate.date timeIntervalSince1970]),
+                @"monotonic": @(now.tv_sec + now.tv_nsec / 1e9), @"watts": systemPower()};
+            NSData *data = [NSJSONSerialization dataWithJSONObject:power options:0 error:nil];
+            if (!data) return 1;
+            puts([[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding].UTF8String);
+            return 0;
+        }
         NSMutableDictionary *result = [@{@"monotonic": @(now.tv_sec + now.tv_nsec / 1e9),
             @"time": @([NSDate.date timeIntervalSince1970]), @"cpuTicks": cpuTicks(),
-            @"interfaces": networkCounters(), @"gpus": gpuStats()} mutableCopy];
+            @"interfaces": networkCounters(), @"gpus": gpuStats(), @"memory": memoryStats()} mutableCopy];
         [result addEntriesFromDictionary:mcThermals()];
         NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
         if (!data) return 1;

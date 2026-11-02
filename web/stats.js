@@ -5,6 +5,7 @@ let statsTimer, statsGeneration=0, fanChanging=false, fanData=null, fanControl=f
 let fanControllerInfo={}, targetDirty=false;
 const viewerId=Array.from(crypto.getRandomValues(new Uint8Array(16)),byte=>byte.toString(16).padStart(2,'0')).join('');
 const finite = value => typeof value === 'number' && Number.isFinite(value);
+const memorySize = value => finite(value) ? `${(value/2**30).toFixed(1)} GB`:'—';
 const rate = value => {
   if (!finite(value)) return '—';
   if (value >= 1e9) return `${(value/1e9).toFixed(1)} GB/s`;
@@ -15,14 +16,17 @@ const rate = value => {
 
 function historyChart(id, history, series, maximum=100, isNetwork=false) {
   const chart=$(`#${id}`);
+  const width=Math.round(chart.getBoundingClientRect().width || 320), height=Math.round(chart.getBoundingClientRect().height || 114);
+  chart.setAttribute('viewBox',`0 0 ${width} ${height}`);
+  const baseline=height-(id==='activity-chart' ? 14:8), top=id==='activity-chart' ? 24:18, right=Math.max(44,width-(isNetwork ? 92:56));
   const end=history.length ? history[history.length-1].time:Date.now()/1000;
   const begin=end-120;
-  const x=time=>5+Math.max(0,Math.min(1,(time-begin)/120))*280;
-  const y=value=>96-Math.max(0,Math.min(1,value/maximum))*82;
+  const x=time=>4+Math.max(0,Math.min(1,(time-begin)/120))*(right-4);
+  const y=value=>baseline-Math.max(0,Math.min(1,value/maximum))*(baseline-top);
   const topLabel=isNetwork ? rate(maximum):'100%';
   let content=`<defs>${series.map(line=>`<linearGradient id="${id}-${line.key}-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${line.color}" stop-opacity=".19"/><stop offset="100%" stop-color="${line.color}" stop-opacity=".01"/></linearGradient>`).join('')}</defs>`;
-  for (const height of [14,55,96]) content+=`<path d="M0 ${height}H288" stroke="#e5e9de" stroke-width=".7" ${height===96 ? '':'stroke-dasharray="3 4"'}/>`;
-  content+=`<text x="319" y="17" text-anchor="end" fill="#9ba58f" font-size="7" font-family="sans-serif">${topLabel}</text><text x="319" y="98" text-anchor="end" fill="#9ba58f" font-size="7" font-family="sans-serif">0</text>`;
+  for (const height of [top,(top+baseline)/2,baseline]) content+=`<path d="M4 ${height}H${right}" stroke="#d1dcd0" stroke-width=".7" ${height===baseline ? '':'stroke-dasharray="3 4"'}/>`;
+  content+=`<text x="${width-2}" y="20" text-anchor="end" fill="#526358" font-size="14" font-family="sans-serif">${topLabel}</text><text x="${width-2}" y="${baseline+4}" text-anchor="end" fill="#526358" font-size="14" font-family="sans-serif">0</text>`;
   for (const line of series) {
     let groups=[], group=[], lastTime=null;
     for (const point of history) {
@@ -37,7 +41,7 @@ function historyChart(id, history, series, maximum=100, isNetwork=false) {
     for (const points of groups) {
       if (points.length<2) continue;
       const path=points.map((point,index)=>`${index ? 'L':'M'}${point[0].toFixed(2)},${point[1].toFixed(2)}`).join(' ');
-      content+=`<path d="${path} L${points[points.length-1][0].toFixed(2)},96 L${points[0][0].toFixed(2)},96 Z" fill="url(#${id}-${line.key}-fill)"/><path d="${path}" fill="none" stroke="${line.color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+      content+=`<path d="${path} L${points[points.length-1][0].toFixed(2)},${baseline} L${points[0][0].toFixed(2)},${baseline} Z" fill="url(#${id}-${line.key}-fill)"/><path d="${path}" fill="none" stroke="${line.color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
     const last=history[history.length-1];
     if (last && finite(last[line.key])) content+=`<circle cx="${x(last.time).toFixed(2)}" cy="${y(last[line.key]).toFixed(2)}" r="2.5" fill="${line.color}" stroke="#fcfdf7" stroke-width="1.2"/>`;
@@ -53,6 +57,12 @@ function renderStats(data) {
   $('.stats-section').classList.toggle('stats-stale',!live);
   $('#cpu-stat-value').textContent=finite(last?.cpu) ? Math.round(last.cpu):'—';
   $('#cpu-stat-detail').textContent=finite(last?.cpu) ? 'Total CPU utilization':history.length>1 ? 'CPU metrics unavailable':'Collecting a sample…';
+  $('#ram-stat-value').textContent=finite(last?.ram) ? Math.round(last.ram):'—';
+  const memory=last?.memory;
+  const available=finite(memory?.used) && finite(memory?.total) && memory.total>0 && memory.used>=0 && memory.used<=memory.total ? memory.total-memory.used:null;
+  $('#ram-free-value').textContent=finite(available) ? (available/2**30).toFixed(1):'—';
+  $('#ram-stat-detail').textContent=last?.memory ? `${memorySize(last.memory.used)} / ${memorySize(last.memory.total)} used`:'Memory metrics unavailable';
+  $('#ram-stat-value').closest('.stat-card').title=finite(available) ? `${memorySize(available)} free to use · ${$('#ram-stat-detail').textContent} · Includes reclaimable cache` : 'Memory metrics unavailable';
   for(const [prefix,key,vendor] of [['gpu','intelGpu','Intel'],['amd','amdGpu','AMD']]) {
     const info=last?.[`${key}Info`], value=last?.[key], sleeping=info?.state==='sleeping';
     $(`#${prefix}-stat-value`).textContent=finite(value) ? Math.round(value):'—';
@@ -82,12 +92,146 @@ function renderStats(data) {
   historyChart('cpu-chart',history,[{key:'cpu',color:'#8ca767'}]);
   historyChart('gpu-chart',history,[{key:'intelGpu',color:'#a79abd'}]);
   historyChart('amd-chart',history,[{key:'amdGpu',color:'#c49b79'}]);
+  historyChart('ram-chart',history,[{key:'ram',color:'#6e9fb7'}]);
   historyChart('network-chart',history,[{key:'download',color:'#7da69b'},{key:'upload',color:'#c7a173'}],maximum,true);
   $('#cpu-chart').setAttribute('aria-label',`CPU utilization over the last two minutes. Current: ${finite(last?.cpu) ? last.cpu+' percent':'unavailable'}.`);
   $('#gpu-chart').setAttribute('aria-label',`Intel GPU utilization over the last two minutes. Current: ${finite(last?.intelGpu) ? last.intelGpu+' percent':'unavailable'}.`);
   $('#amd-chart').setAttribute('aria-label',`AMD GPU utilization over the last two minutes. Current: ${finite(last?.amdGpu) ? last.amdGpu+' percent':'unavailable'}. ${last?.amdGpuInfo?.state==='sleeping' ? 'GPU powered down by macOS.':''}`);
   $('#network-chart').setAttribute('aria-label',`Network traffic over the last two minutes. Download ${rate(last?.download)}, upload ${rate(last?.upload)}.`);
+  $('#ram-chart').setAttribute('aria-label',`RAM utilization over the last two minutes. Current: ${finite(last?.ram) ? last.ram+' percent':'unavailable'}. ${$('#ram-stat-detail').textContent}.`);
+  renderActivityDetail(data);
 }
+
+const activityViews={
+  cpu:{name:'CPU',lines:[{key:'cpu',name:'CPU',color:'#8ca767'}]},
+  gpu:{name:'Intel GPU',lines:[{key:'intelGpu',name:'Intel GPU',color:'#a79abd'}]},
+  amd:{name:'AMD GPU',lines:[{key:'amdGpu',name:'AMD GPU',color:'#c49b79'}]},
+  ram:{name:'RAM',lines:[{key:'ram',name:'Memory utilization',color:'#6e9fb7'}]},
+  network:{name:'Network',lines:[{key:'download',name:'↓ Download',color:'#7da69b'},{key:'upload',name:'↑ Upload',color:'#c7a173'}]}
+};
+let expandedActivity=null, activitySource=null, activityMotion=null;
+const reducedActivityMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function renderActivityDetail(data) {
+  if(!expandedActivity || !$('#activity-dialog').open) return;
+  const view=activityViews[expandedActivity], history=data?.history || [], last=history.at(-1);
+  const power=typeof view.renderDetail==='function';
+  $('#activity-dialog').classList.toggle('is-power-detail',power);
+  $('#power-detail-windows').hidden=!power || expandedActivity==='power-energy';
+  if(power) {view.renderDetail();return;}
+  $('#activity-dialog .eyebrow').textContent='SYSTEM ACTIVITY · LAST TWO MINUTES';
+  $('#activity-chart').setAttribute('viewBox','0 0 320 114');
+  $('#activity-dialog .activity-time span:first-child').textContent='2 min ago';
+  const network=expandedActivity==='network', format=network ? rate:value=>finite(value) ? `${value.toFixed(1)}%`:'—';
+  $('#activity-title').textContent=view.name;
+  $('#activity-detail').textContent=network ? $('#network-stat-detail').textContent:$(`#${expandedActivity}-stat-detail`).textContent;
+  const memory=last?.memory, showMemory=expandedActivity==='ram';
+  const validMemory=finite(memory?.used) && finite(memory?.total) && memory.total>0 && memory.used>=0 && memory.used<=memory.total;
+  const available=validMemory ? memory.total-memory.used:null;
+  const availablePercent=validMemory ? 100*available/memory.total:0;
+  $('#activity-summary').classList.toggle('has-memory',showMemory);
+  $('#memory-available').hidden=!showMemory;
+  $('#memory-available-value').textContent=memorySize(available);
+  $('#memory-available-total').textContent=validMemory ? `of ${memorySize(memory.total)} installed`:'Waiting for memory data…';
+  $('#memory-available-percent').textContent=validMemory ? `${Math.round(availablePercent)}%`:'—';
+  $('#memory-available-ring').style.setProperty('--memory-free',`${availablePercent}%`);
+  $('#memory-available-ring').classList.toggle('is-unavailable',!validMemory);
+  $('#memory-available').setAttribute('aria-label',validMemory ? `${memorySize(available)} free to use out of ${memorySize(memory.total)} installed. Includes reclaimable cache.`:'Available memory is not yet known.');
+  const container=$('#activity-values');container.replaceChildren();
+  for(const line of view.lines) {
+    const samples=history.filter(point=>point.time>=(last?.time || 0)-120).map(point=>point[line.key]).filter(finite);
+    const group=document.createElement('div'), title=document.createElement('h3');title.textContent=line.name;group.append(title);
+    for(const [label,value] of [['Now',last?.[line.key]],['Average',samples.length ? samples.reduce((sum,v)=>sum+v,0)/samples.length:null],['Peak',samples.length ? Math.max(...samples):null]]) {
+      const row=document.createElement('p'), name=document.createElement('span'), output=document.createElement('strong');
+      name.textContent=label;output.textContent=format(value);row.append(name,output);group.append(row);
+    }
+    container.append(group);
+  }
+  if(expandedActivity==='ram' && last?.memory) {
+    const group=document.createElement('div'), title=document.createElement('h3');
+    title.textContent='Physical memory';group.append(title);
+    for(const [label,value] of [['Used',last.memory.used],['Installed',last.memory.total],['Compressed',last.memory.compressed]]) {
+      const row=document.createElement('p'), name=document.createElement('span'), output=document.createElement('strong');
+      name.textContent=label;output.textContent=memorySize(value);row.append(name,output);group.append(row);
+    }
+    container.append(group);
+  }
+  const values=history.flatMap(point=>view.lines.map(line=>point[line.key])).filter(finite);
+  const peak=Math.max(1000,...values), exponent=10**Math.floor(Math.log10(peak));
+  historyChart('activity-chart',history,view.lines,network ? Math.ceil(peak/exponent)*exponent:100,network);
+  $('#activity-chart').setAttribute('aria-label',`${view.name} over the last two minutes. ${view.lines.map(line=>`${line.name}: ${format(last?.[line.key])}`).join('. ')}`);
+  $('#activity-status').textContent=!authenticated ? 'Sign in to see statistics.':data?.error ? 'Reconnecting to statistics.':data?.running ? 'Live · updates every 2 seconds. Gaps indicate missing samples.':'Sampling paused. Gaps indicate missing samples.';
+}
+// A shared graph flies between its real tile and detail bounds. Keep this in
+// the dialog's top layer so it remains above the backdrop in every browser.
+function flyActivity(opening, sourceCard, sourceChart) {
+  const dialog=$('#activity-dialog'), chart=$('#activity-chart');
+  const cardBounds=sourceCard.getBoundingClientRect(), chartBounds=sourceChart.getBoundingClientRect();
+  if(reducedActivityMotion() || !chartBounds.width || !chartBounds.height) return Promise.resolve();
+  const panelBounds=dialog.getBoundingClientRect(), detailBounds=chart.getBoundingClientRect();
+  const flight=document.createElement('div');flight.className='activity-flight';flight.setAttribute('aria-hidden','true');
+  const panel=document.createElement('div');panel.className='activity-flight-panel';
+  const graph=chart.cloneNode(true);graph.removeAttribute('id');graph.classList.add('activity-flight-chart');
+  // Gradient IDs must be unique while both copies are on screen.
+  graph.innerHTML=graph.innerHTML.replaceAll('activity-chart-', 'activity-flight-');
+  flight.append(panel,graph);dialog.append(flight);
+  dialog.classList.add('is-transitioning',opening ? 'is-opening':'is-closing');
+  const duration=opening ? 620:460, easing='cubic-bezier(.22,.8,.18,1)';
+  const animations=[];
+  for(const [element,from,to] of [[panel,cardBounds,panelBounds],[graph,chartBounds,detailBounds]]) {
+    Object.assign(element.style,{left:`${to.left}px`,top:`${to.top}px`,width:`${to.width}px`,height:`${to.height}px`});
+    const small={transform:`translate(${from.left-to.left}px,${from.top-to.top}px) scale(${from.width/to.width},${from.height/to.height})`};
+    const large={transform:'translate(0,0) scale(1,1)'};
+    if(element===panel) {small.borderRadius='16px';large.borderRadius=getComputedStyle(dialog).borderRadius;}
+    animations.push(element.animate(opening ? [small,large]:[large,small],{duration,easing,fill:'both'}));
+  }
+  for(const child of dialog.children) {
+    if(child===flight || child===chart) continue;
+    animations.push(child.animate(opening ? [{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}]:[{opacity:1},{opacity:0}],
+      {duration:opening ? 240:120,delay:opening ? 300:0,fill:'both',easing:'ease-out'}));
+  }
+  let cleanup, cleaned=false;
+  const done=Promise.all(animations.map(animation=>animation.finished)).catch(()=>{}).finally(()=>cleanup());
+  cleanup=()=>{
+    if(cleaned) return;
+    cleaned=true;
+    animations.forEach(animation=>animation.cancel());flight.remove();
+    dialog.classList.remove('is-transitioning','is-opening','is-closing');
+    if(activityMotion?.flight===flight) activityMotion=null;
+  };
+  activityMotion={flight,cancel:cleanup,done};
+  return done;
+}
+async function closeActivity() {
+  const dialog=$('#activity-dialog');
+  if(!dialog.open || dialog.classList.contains('is-closing')) return;
+  activityMotion?.cancel();
+  document.body.classList.remove('activity-immersed');
+  if(activitySource?.isConnected) await flyActivity(false,activitySource.closest('.stat-card,.power-card'),activitySourceChart());
+  if(dialog.open) dialog.close();
+}
+function activitySourceChart() {
+  return $(activityViews[expandedActivity].sourceChart || `#${expandedActivity}-chart`);
+}
+document.querySelectorAll('[data-activity]').forEach(button=>button.addEventListener('click',()=>{
+  if($('#activity-dialog').open) return;
+  expandedActivity=button.dataset.activity;
+  activitySource=button;
+  button.setAttribute('aria-expanded','true');
+  $('#activity-dialog').showModal();renderActivityDetail(statsData);
+  flyActivity(true,button.closest('.stat-card,.power-card'),activitySourceChart());
+  document.body.classList.add('activity-immersed');
+}));
+$('#activity-dialog form').addEventListener('submit',event=>{event.preventDefault();closeActivity();});
+$('#activity-dialog').addEventListener('cancel',event=>{event.preventDefault();closeActivity();});
+$('#activity-dialog').addEventListener('close',()=>{
+  activityMotion?.cancel();
+  document.body.classList.remove('activity-immersed');
+  document.querySelectorAll('[data-activity]').forEach(button=>button.setAttribute('aria-expanded','false'));
+  activitySource?.focus({preventScroll:true});
+  expandedActivity=null;activitySource=null;
+});
+window.addEventListener('resize',()=>{activityMotion?.cancel();renderStats(statsData);});
+document.addEventListener('dashboard:pause',()=>{if($('#activity-dialog').open) $('#activity-dialog').close();});
 
 function fanMode() {
   return ['target','constant'].includes(fanControllerInfo.controllerMode) ? fanControllerInfo.controllerMode:fanData?.fanMode;
@@ -142,13 +286,13 @@ function renderFans(data, installed, controller=fanControllerInfo) {
   $('#target-curve-preview').hidden=mode!=='target';
   $('#constant-controls').hidden=mode!=='constant';
   $('#cpu-target-input').disabled=!authenticated || !targetSupported;
-  $('#fan-setup').hidden=constantSupported;
-  $('#fan-setup').textContent=installed ? 'Update helper for Constant mode ↗':'Enable fan control ↗';
+  $('#fan-setup').hidden=!!installed && fanControllerInfo.version>=4;
+  $('#fan-setup').textContent=installed ? 'Update helper for predictive Target ↗':'Enable fan control ↗';
   if(!targetDirty && document.activeElement!==$('#cpu-target-input') && finite(fanControllerInfo.targetTemperature)) $('#cpu-target-input').value=fanControllerInfo.targetTemperature;
   updateCurveLabel();renderConstantFans(fans,constantSupported);
   $('.fan-section').classList.toggle('changing',fanChanging);
   const ramping=fans.some(fan=>finite(fan.rpm) && finite(fan.maximum) && fan.rpm<fan.maximum-200);
-  $('#fan-mode-description').textContent=mode==='target' ? `CPU target ${fanControllerInfo.targetTemperature}°C · ${fanControllerInfo.safetyOverride ? 'maximum cooling':'adaptive fan curve'}` : mode==='constant' ? 'Fixed RPM for each fan · release a slider to save.' : mode==='auto' ? 'Apple is managing fan speed.' : mode==='max' ? ramping ? 'Maximum selected · fans are ramping up.':'All fans at their firmware maximum.' : mode==='custom' ? 'A custom fan override is active.' : 'Apple manages fan speed by default.';
+  $('#fan-mode-description').textContent=mode==='target' ? `CPU target ${fanControllerInfo.targetTemperature}°C · ${fanControllerInfo.safetyOverride ? 'maximum cooling':fanControllerInfo.targetAlgorithm==='predictive' ? 'predictive cooling':'legacy fan curve'}` : mode==='constant' ? 'Fixed RPM for each fan · release a slider to save.' : mode==='auto' ? 'Apple is managing fan speed.' : mode==='max' ? ramping ? 'Maximum selected · fans are ramping up.':'All fans at their firmware maximum.' : mode==='custom' ? 'A custom fan override is active.' : 'Apple manages fan speed by default.';
   if(fanControllerInfo.controllerError) $('#fan-mode-description').textContent=fanControllerInfo.controllerError;
   const readings=$('#fan-readings');readings.replaceChildren();
   if(!fans.length) {readings.textContent=data ? 'Fan readings unavailable':'Reading fan speeds…';return;}
@@ -162,7 +306,11 @@ function renderFans(data, installed, controller=fanControllerInfo) {
 }
 function updateCurveLabel() {
   const goal=Number($('#cpu-target-input').value);
-  if(Number.isFinite(goal) && goal>=50 && goal<=85) $('#target-curve-label').textContent=`Base curve: ${goal-15}°C → ${goal}°C → max at ${Math.min(goal+6,90)}°C. Adapts to load.`;
+  if(!Number.isFinite(goal) || goal<50 || goal>85) return;
+  const info=fanControllerInfo;
+  $('#target-curve-label').textContent=info.targetAlgorithm==='predictive'
+    ? `20s forecast ${finite(info.predictedTemperature) ? info.predictedTemperature.toFixed(1)+'°C':'collecting…'} · aims below ${(goal-(info.headroom || 2)).toFixed(1)}°C · ${info.learningSamples || 0} learned samples${info.learningWarning ? ' · '+info.learningWarning:''}`
+    : 'Update the fan helper to enable predictive cooling that learns from temperature, CPU load, and fan response.';
 }
 $('#cpu-target-input').addEventListener('input',()=>{targetDirty=true;$('#cpu-target-input').removeAttribute('aria-invalid');updateCurveLabel();});
 $('#cpu-target-input').addEventListener('blur',()=>{if(targetDirty && fanMode()==='target') applyFanMode('target');});
@@ -205,7 +353,7 @@ $('#fan-setup').addEventListener('click',async()=>{
   try {
     const info=await api('/api/connection');$('#fan-installer-path').textContent=info.fanInstaller;
     $('#fan-help-title').textContent=fanControl ? 'Update the fan helper.':'Enable fan control.';
-    $('#fan-help-intro').textContent=fanControl ? 'Run the installer once more to add independent Constant RPM controls. macOS needs administrator approval to replace the helper.':'Install the administrator helper once to enable Constant, Max, and CPU Target fan modes.';
+    $('#fan-help-intro').textContent=fanControl ? 'Run the installer once more to add predictive Target cooling and retain independent Constant RPM controls. macOS needs administrator approval to replace the helper.':'Install the administrator helper once to enable Constant, Max, and CPU Target fan modes.';
     $('#fan-help-dialog').showModal();
   } catch(error) {toast(error.message,true);}
 });

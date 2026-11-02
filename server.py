@@ -18,7 +18,9 @@ from urllib.parse import urlsplit, parse_qs
 from auth import AuthStore, REMEMBER_SECONDS
 from controls import ControlManager
 from metrics import StatsMonitor
+from power import PowerMonitor
 from fans import FanController
+from graphics import GraphicsController
 from drives import DriveManager
 from inputs import InputController
 from build_controls_app import build as build_controls_app, APP_NAME, EXECUTABLE_NAME
@@ -35,9 +37,11 @@ ATTEMPTS = collections.defaultdict(collections.deque)
 AUTH = None
 CONTROLS = None
 STATS = None
+POWER = None
 FANS = None
 DRIVES = None
 INPUTS = None
+GRAPHICS = None
 HOSTS = set()
 INFO = {}
 
@@ -92,6 +96,7 @@ def hardware(*args, fresh=False):
         state[key] = bool(state.get(key))
     state['capabilities'] = {key: bool(value) for key, value in state['capabilities'].items()}
     state['device'] = INFO['name']
+    state['graphics'] = GRAPHICS.status() if GRAPHICS else {'available': False, 'mode': None}
     return state
 
 
@@ -188,6 +193,14 @@ class Handler(BaseHTTPRequestHandler):
             except RuntimeError as error:
                 self.json(503, {'error': str(error)})
             return
+        if path == '/api/power':
+            if self.require_session():
+                hours = parse_qs(urlsplit(self.path).query).get('hours', ['1'])[0]
+                if hours not in ('1', '12', '24'):
+                    self.json(400, {'error': 'Power history must be 1, 12, or 24 hours.'})
+                    return
+                self.json(200, POWER.snapshot(int(hours)))
+            return
         if path == '/api/stats/status':
             if self.require_session():
                 self.json(200, STATS.diagnostics())
@@ -230,6 +243,7 @@ class Handler(BaseHTTPRequestHandler):
                  '/compact.css': ('compact.css', 'text/css; charset=utf-8'),
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                  '/stats.js': ('stats.js', 'text/javascript; charset=utf-8'),
+                 '/power.js': ('power.js', 'text/javascript; charset=utf-8'),
                  '/drives.js': ('drives.js', 'text/javascript; charset=utf-8'),
                  '/inputs.js': ('inputs.js', 'text/javascript; charset=utf-8'),
                  '/favicon.svg': ('favicon.svg', 'image/svg+xml')}
@@ -307,7 +321,14 @@ class Handler(BaseHTTPRequestHandler):
             self.json(200, {'authenticated': False}, 'mac_control=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0')
             return
         try:
-            if path == '/api/fans':
+            if path == '/api/graphics':
+                try: result = GRAPHICS.set_mode(body.get('mode'))
+                except ValueError as error:
+                    self.json(400, {'error': str(error)})
+                    return
+                self.json(200, result)
+                return
+            elif path == '/api/fans':
                 if body.get('mode') not in ('auto', 'max', 'target', 'constant'):
                     self.json(400, {'error': 'Choose Apple Auto, Constant, Target, or Max.'})
                     return
@@ -364,7 +385,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global AUTH, CONTROLS, STATS, FANS, DRIVES, INPUTS, INFO, HOSTS
+    global AUTH, CONTROLS, STATS, POWER, FANS, DRIVES, INPUTS, GRAPHICS, INFO, HOSTS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', type=int, default=8765)
     parser.add_argument('--host', default='0.0.0.0', choices=['0.0.0.0', '127.0.0.1'])
@@ -377,10 +398,12 @@ def main():
     FANS = FanController(memory_path=RUNTIME / 'fan-settings.json')
     DRIVES = DriveManager(RUNTIME / 'drives', RUNTIME / 'drives.json')
     INPUTS = InputController()
+    GRAPHICS = GraphicsController()
     INFO = local_info(args.port)
     HOSTS = {'localhost', '127.0.0.1', INFO['hostname'].lower(), socket.gethostname().lower(), *INFO['addresses']}
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     STATS = StatsMonitor(RUNTIME / 'metrics')
+    POWER = PowerMonitor(RUNTIME / 'metrics', RUNTIME / 'power.sqlite3')
     server.daemon_threads = True
     server.timeout = 5
     restoration = StartupRestore({'controls': CONTROLS.restore, 'fans': FANS.restore, 'USB drives': DRIVES.restore})
@@ -396,6 +419,7 @@ def main():
     finally:
         server.server_close()
         STATS.close()
+        POWER.close()
         restoration.close()
         CONTROLS.close()
 

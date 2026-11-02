@@ -83,6 +83,27 @@ class MetricsTests(unittest.TestCase):
         self.assertIsNone(point['download'])
         self.assertEqual(point['gpu'], 0)
 
+    def test_memory_is_available_on_first_sample_and_after_a_pause(self):
+        current = self.sample()
+        current['memory'] = {'used': 12 * 2**30, 'total': 16 * 2**30, 'compressed': 2**30}
+        point = sample_delta(None, current)
+        self.assertEqual(point['ram'], 75)
+        self.assertEqual(point['memory'], current['memory'])
+        previous = self.sample()
+        current['monotonic'] = 100
+        self.assertEqual(sample_delta(previous, current)['ram'], 75)
+
+    def test_missing_or_invalid_memory_is_unavailable(self):
+        for memory in [None, {}, {'used': 1, 'total': 0}, {'used': -1, 'total': 16},
+                       {'used': 17, 'total': 16}, {'used': float('nan'), 'total': 16},
+                       {'used': True, 'total': 16}]:
+            with self.subTest(memory=memory):
+                current = self.sample()
+                current['memory'] = memory
+                point = sample_delta(None, current)
+                self.assertIsNone(point['ram'])
+                self.assertIsNone(point['memory'])
+
     def test_cpu_and_network_use_deltas_over_actual_elapsed_time(self):
         previous = self.sample()
         current = self.sample()
