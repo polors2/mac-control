@@ -193,11 +193,13 @@ does not install it or enable iPhone push provisioning.
 The server uses Python's standard library. Native Objective-C helpers use Foundation, AppKit, IOKit/AppleSMC, CoreAudio, ApplicationServices, and Disk Arbitration. The frontend is plain HTML, CSS, JavaScript, and SVG; no external assets or CDN are required.
 
 ```sh
-python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py test_notifier_bridge.py test_encrypted_drives.py
+python3 -m unittest test_auth.py test_controls_metrics.py test_visibility_fans.py test_drives_target.py test_inputs.py test_installer.py test_brightness.py test_persistence.py test_notifier_bridge.py test_encrypted_drives.py test_copy_progress.py
 ```
 
-The 119 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, viewer-driven monitoring, and notifier bridge authentication/fallback behavior. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
+The 126 checks cover authentication, preserved credentials, safe installer ordering, hardware-state handling, fan bounds, separate input commands, dynamic drive metadata, persistent Display Off, guard recovery, persistent display sleep and wake ordering, restoration over simulated boot defaults, bounded startup retries, viewer-driven monitoring, and notifier bridge authentication/fallback behavior. Run native build preflight with `./install.command --check`. Some hardware APIs are private and may change after a macOS update; unsupported controls report their unavailable state.
 
 See [implementation and maintenance details](docs/REFERENCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 Copy progress shows only active copy names, overall percentage, transferred bytes/time remaining, and a current filename when available. Finder navigation/sidebar entries and empty per-file placeholders are hidden. Slider titles, percentages, and On/Off buttons use separate layout cells at every card width.
+
+Copy rows require transferred-byte or time-remaining details. Generic Finder operation records, stale registry entries, and percentage-only observations are hidden; detailed Finder summaries take precedence over their registry duplicates. Frontend regression checks execute the actual selector with macOS JavaScriptCore.
