@@ -1,0 +1,2338 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mac Control HTTP API",
+    "version": "1.1.0",
+    "description": "Documentation revision reviewed 2026-11-02 against this repository. All current /api/ GET/POST operations; not a negotiated runtime API version. The separate openapi.json documents Notifier /v1/ routes. Native helper response shapes are intentionally extensible."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8765",
+      "description": "Default origin; use an allowed LAN host and configured port as appropriate."
+    }
+  ],
+  "externalDocs": {
+    "description": "Human-readable API guide",
+    "url": "../../docs/API.md"
+  },
+  "security": [
+    {
+      "macControlSession": []
+    }
+  ],
+  "x-reviewed-on": "2026-11-02",
+  "x-implementation-sources": [
+    "../../server.py",
+    "../../auth.py",
+    "../../mac_control_bridge.py",
+    "../../controls.py",
+    "../../fans.py",
+    "../../inputs.py",
+    "../../graphics.py",
+    "../../drives.py",
+    "../../metrics.py",
+    "../../power.py",
+    "../../host_status.py"
+  ],
+  "x-access-rules": {
+    "all_requests": [
+      "source IP is private, loopback or link-local according to Python ipaddress",
+      "Host hostname is in the startup allowlist and port equals configured port; no userinfo",
+      "Sec-Fetch-Site must not be cross-site"
+    ],
+    "post": [
+      "Origin must exactly equal http:// plus Host",
+      "application/json object with Content-Length from 1 through 4096 bytes"
+    ],
+    "cors_supported": false,
+    "mac_control_bearer_auth_supported": false
+  },
+  "x-response-rules": {
+    "cache_control": "no-store",
+    "unknown_get": "404 JSON",
+    "unknown_post": "404 JSON after network/body/session checks",
+    "unsupported_methods": "BaseHTTPRequestHandler default, normally 501 HTML",
+    "live_openapi_route": null
+  },
+  "paths": {
+    "/api/session": {
+      "get": {
+        "operationId": "getSession",
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Inspect session and initial setup status",
+        "description": "Inspect session and initial setup status",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "operationId": "createSession",
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Sign in with the dashboard password",
+        "description": "Sign in with the dashboard password",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCreated"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "mac_control; HttpOnly; SameSite=Strict; Path=/. Remembered login adds Max-Age=2592000; logout uses Max-Age=0.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Eight failed sign-ins from this IP within a rolling minute; no Retry-After header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/setup": {
+      "post": {
+        "operationId": "setupPassword",
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Create the first password from loopback and sign in",
+        "description": "Cannot overwrite an existing password. Source must be loopback, even if Host is localhost. Same authentication rate-limit check as sign-in.",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCreated"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "mac_control; HttpOnly; SameSite=Strict; Path=/. Remembered login adds Max-Age=2592000; logout uses Max-Age=0.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already configured or hardware state contains an error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Eight failed sign-ins from this IP within a rolling minute; no Retry-After header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/logout": {
+      "post": {
+        "operationId": "logout",
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Revoke current session and clear its cookie",
+        "description": "Revoke current session and clear its cookie",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoggedOut"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "mac_control; HttpOnly; SameSite=Strict; Path=/. Remembered login adds Max-Age=2592000; logout uses Max-Age=0.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/state": {
+      "get": {
+        "operationId": "getState",
+        "tags": [
+          "Controls"
+        ],
+        "summary": "Read hardware capabilities and control state",
+        "description": "Read hardware capabilities and control state",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareState"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/control": {
+      "post": {
+        "operationId": "setControl",
+        "tags": [
+          "Controls"
+        ],
+        "summary": "Set a numeric control",
+        "description": "Set a numeric control",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareState"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already configured or hardware state contains an error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/toggle": {
+      "post": {
+        "operationId": "toggleControl",
+        "tags": [
+          "Controls"
+        ],
+        "summary": "Turn a control off or restore its previous level",
+        "description": "Turn a control off or restore its previous level",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareState"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already configured or hardware state contains an error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToggleRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/media": {
+      "post": {
+        "operationId": "sendMedia",
+        "tags": [
+          "Controls"
+        ],
+        "summary": "Send play/pause, next or previous media key",
+        "description": "Send play/pause, next or previous media key",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareState"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already configured or hardware state contains an error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/graphics": {
+      "post": {
+        "operationId": "setGraphics",
+        "tags": [
+          "Controls"
+        ],
+        "summary": "Set and confirm saved graphics policy",
+        "description": "Set and confirm saved graphics policy",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphicsStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphicsRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/fans": {
+      "post": {
+        "operationId": "setFans",
+        "tags": [
+          "Controls"
+        ],
+        "summary": "Set fan mode, CPU target or per-fan constant RPM",
+        "description": "Set fan mode, CPU target or per-fan constant RPM",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FanStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FanRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/inputs": {
+      "get": {
+        "operationId": "getInputs",
+        "tags": [
+          "Controls"
+        ],
+        "summary": "Read separate built-in keyboard and trackpad status",
+        "description": "Read separate built-in keyboard and trackpad status",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "setInput",
+        "tags": [
+          "Controls"
+        ],
+        "summary": "Enable or disable one built-in input",
+        "description": "Enable or disable one built-in input",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already configured or hardware state contains an error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InputRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/drives": {
+      "get": {
+        "operationId": "getDrives",
+        "tags": [
+          "Storage"
+        ],
+        "summary": "List connected eligible external USB targets",
+        "description": "List connected eligible external USB targets",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriveSnapshot"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "setDrive",
+        "tags": [
+          "Storage"
+        ],
+        "summary": "Mount, unmount or unlock-and-mount a USB target",
+        "description": "Mount, unmount or unlock-and-mount a USB target",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriveSnapshot"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already configured or hardware state contains an error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriveSnapshot"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Caught RuntimeError from control/helper operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "operationId": "getStats",
+        "tags": [
+          "Telemetry"
+        ],
+        "summary": "Renew a viewer lease and read recent system activity",
+        "description": "Default 5-second lease keyed to cookie and viewer; shared 2-second sampler, 120-second returned history. Generate one viewer per visible client. Sampling pauses without leases.",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsSnapshot"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "viewer",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/stats/status": {
+      "get": {
+        "operationId": "getStatsStatus",
+        "tags": [
+          "Telemetry"
+        ],
+        "summary": "Read sampling diagnostics without renewing a lease",
+        "description": "Read sampling diagnostics without renewing a lease",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/leave": {
+      "post": {
+        "operationId": "leaveStats",
+        "tags": [
+          "Telemetry"
+        ],
+        "summary": "Release only the supplied cookie and viewer lease",
+        "description": "Deliberately accepts departing/expired/revoked sessions, including an absent cookie. Only removes that exact cookie/viewer lease. Network/Host/site/Origin and JSON checks still apply.",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Paused"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "description": "JSON object, 1\u20134096 bytes, Content-Length required. Unknown fields generally ignored.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ]
+      }
+    },
+    "/api/power": {
+      "get": {
+        "operationId": "getPower",
+        "tags": [
+          "Telemetry"
+        ],
+        "summary": "Read power history and recorded daily energy",
+        "description": "Independent 10-second power logger continues without dashboard viewers. Watts unavailable after 25 seconds or a logger error; null is not zero.",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PowerSnapshot"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON object, body size/content type or route input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "12",
+                "24"
+              ],
+              "default": "1"
+            }
+          }
+        ]
+      }
+    },
+    "/api/connection": {
+      "get": {
+        "operationId": "getConnection",
+        "tags": [
+          "Connection"
+        ],
+        "summary": "Read dashboard addresses and local setup paths",
+        "description": "Read dashboard addresses and local setup paths",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file-activity": {
+      "get": {
+        "operationId": "getFileActivity",
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Read optional Notifier copy activity through the local bridge",
+        "description": "First integration use case. After authorization, pulls GET /v1/snapshot over fixed loopback with a server-held administrator bearer. 2-second timeout; 2 MiB cap; environment proxies disabled. Upstream/configuration failures caught by the bridge return HTTP 200 available=false. No ingestion, WebSocket or browser bearer auth. Local browser hides activity on fallback/request failure.",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BridgeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "externalDocs": {
+          "description": "Detailed Notifier integration",
+          "url": "../../docs/integrations/mac-control.md"
+        }
+      }
+    },
+    "/api/host-status": {
+      "get": {
+        "operationId": "getHostStatus",
+        "tags": [
+          "Telemetry"
+        ],
+        "summary": "Read host battery and Tailscale status",
+        "description": "Read-only local commands, two-second timeout each, shared ten-second demand-driven cache. Unavailable sensors return HTTP 200 with explicit unknown states; no peers, addresses or account data are returned.",
+        "responses": {
+          "200": {
+            "description": "Successful request; inspect payload availability, capability and error fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Source/Host/site/Origin rejection, or non-loopback setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session (loginRequired=true), or incorrect sign-in password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "macControlSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "mac_control",
+        "description": "HttpOnly; SameSite=Strict; Path=/. Ordinary server expiry 24h with browser-session cookie; remembered expiry 30d and Max-Age=2592000. Fixed expiry; password change revokes all sessions."
+      }
+    },
+    "parameters": {
+      "Origin": {
+        "name": "Origin",
+        "in": "header",
+        "required": true,
+        "description": "Must exactly equal http:// plus the request Host (including configured port), even for a non-browser client or sign-in.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "http://localhost:8765"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "loginRequired": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "error"
+        ]
+      },
+      "SessionStatus": {
+        "type": "object",
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "setupRequired": {
+            "type": "boolean"
+          },
+          "canSetup": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "authenticated",
+          "setupRequired",
+          "canSetup"
+        ]
+      },
+      "SessionRequest": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "writeOnly": true
+          },
+          "remember": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "password"
+        ]
+      },
+      "SessionCreated": {
+        "type": "object",
+        "properties": {
+          "authenticated": {
+            "const": true
+          },
+          "remembered": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "authenticated",
+          "remembered"
+        ]
+      },
+      "LoggedOut": {
+        "type": "object",
+        "properties": {
+          "authenticated": {
+            "const": false
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "authenticated"
+        ]
+      },
+      "GraphicsStatus": {
+        "type": "object",
+        "properties": {
+          "installed": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "mode": {
+            "enum": [
+              "auto",
+              "intel",
+              "amd",
+              null
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "HardwareState": {
+        "type": "object",
+        "properties": {
+          "brightness": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "keyboard": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "volume": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "muted": {
+            "type": "boolean"
+          },
+          "keyboardAuto": {
+            "type": "boolean"
+          },
+          "keyboardSuppressed": {
+            "type": "boolean"
+          },
+          "displaySleep": {
+            "type": "boolean"
+          },
+          "displayOff": {
+            "type": "boolean"
+          },
+          "displayAsleep": {
+            "type": "boolean"
+          },
+          "audioOutput": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "restoreLevels": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "graphics": {
+            "$ref": "#/components/schemas/GraphicsStatus"
+          },
+          "error": {
+            "type": "string"
+          },
+          "displayOffError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "displaySleepError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "capabilities",
+          "device",
+          "graphics"
+        ],
+        "description": "Extensible native/control-manager state. Unsupported numeric controls can be null; inspect capabilities and error."
+      },
+      "ControlRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "control": {
+                "enum": [
+                  "brightness",
+                  "keyboard",
+                  "volume"
+                ]
+              },
+              "value": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "control",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "control": {
+                "enum": [
+                  "mute",
+                  "keyboardAuto",
+                  "displaySleep"
+                ]
+              },
+              "value": {
+                "type": "number",
+                "enum": [
+                  0,
+                  1
+                ]
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "control",
+              "value"
+            ]
+          }
+        ],
+        "description": "Value must be numeric; JSON booleans are rejected."
+      },
+      "ToggleRequest": {
+        "type": "object",
+        "properties": {
+          "control": {
+            "enum": [
+              "brightness",
+              "keyboard",
+              "volume"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "control",
+          "enabled"
+        ]
+      },
+      "MediaRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "enum": [
+              "play",
+              "next",
+              "previous"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "action"
+        ]
+      },
+      "GraphicsRequest": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "enum": [
+              "auto",
+              "intel",
+              "amd"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "mode"
+        ]
+      },
+      "FanRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "enum": [
+                  "auto",
+                  "max"
+                ]
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "mode"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "const": "target"
+              },
+              "temperature": {
+                "type": "number",
+                "minimum": 50,
+                "maximum": 85
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "mode",
+              "temperature"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "const": "constant"
+              },
+              "speeds": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 10,
+                "items": {
+                  "type": "integer",
+                  "minimum": 500,
+                  "maximum": 16383
+                }
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "mode",
+              "speeds"
+            ]
+          }
+        ],
+        "description": "Target uses Celsius and needs helper v2+. Constant needs helper v3+, JSON integer RPMs (not float literals), one per detected fan in reported order, within firmware limits."
+      },
+      "FanStatus": {
+        "type": "object",
+        "properties": {
+          "installed": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fanMode": {
+            "type": "string"
+          },
+          "fans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "targetTemperature": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "constantTargets": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "time": {
+            "type": "number"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "description": "Helper-dependent fields; POST adds epoch time. Stats embeds status without adding time."
+      },
+      "InputDevice": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "controllable": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "InputStatus": {
+        "type": "object",
+        "properties": {
+          "installed": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "keyboard": {
+            "$ref": "#/components/schemas/InputDevice"
+          },
+          "trackpad": {
+            "$ref": "#/components/schemas/InputDevice"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "installed",
+          "version",
+          "keyboard",
+          "trackpad"
+        ]
+      },
+      "InputRequest": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "enum": [
+              "keyboard",
+              "trackpad"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "device",
+          "enabled"
+        ]
+      },
+      "DriveRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{8}(?:-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$"
+          },
+          "mounted": {
+            "type": "boolean"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "writeOnly": true,
+            "description": "Only when mounted=true; at most 1024 UTF-8 bytes; no CR, LF or NUL. Never persisted as a mount preference."
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "mounted"
+        ]
+      },
+      "DriveSnapshot": {
+        "type": "object",
+        "properties": {
+          "drives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Currently connected eligible USB target. Native helper fields include volume UUID id, name, model, size, connected, mounted, locked, state and volume metadata."
+            }
+          },
+          "error": {
+            "type": "string"
+          },
+          "requiresPassword": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "drives"
+        ]
+      },
+      "StatsSnapshot": {
+        "type": "object",
+        "properties": {
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Sample: epoch time; nullable CPU/RAM/GPU percentages, memory, network bytes/s, temperatures in Celsius, fans and hardware-dependent metadata."
+            }
+          },
+          "interval": {
+            "type": "number"
+          },
+          "window": {
+            "type": "number"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "running": {
+            "type": "boolean"
+          },
+          "viewers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "samples": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fanController": {
+            "$ref": "#/components/schemas/FanStatus"
+          },
+          "fanControl": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "history",
+          "interval",
+          "window",
+          "error",
+          "running",
+          "viewers",
+          "samples",
+          "fanController",
+          "fanControl"
+        ]
+      },
+      "StatsStatus": {
+        "type": "object",
+        "properties": {
+          "sampling": {
+            "type": "boolean"
+          },
+          "viewers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sensorReads": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "interval": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "sampling",
+          "viewers",
+          "sensorReads",
+          "interval"
+        ]
+      },
+      "LeaveRequest": {
+        "type": "object",
+        "properties": {
+          "viewer": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "viewer"
+        ]
+      },
+      "Paused": {
+        "type": "object",
+        "properties": {
+          "paused": {
+            "const": true
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "paused"
+        ]
+      },
+      "ChartPoint": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "number"
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "time",
+          "value"
+        ]
+      },
+      "PowerSnapshot": {
+        "type": "object",
+        "properties": {
+          "now": {
+            "type": "number"
+          },
+          "hours": {
+            "type": "integer",
+            "enum": [
+              1,
+              12,
+              24
+            ]
+          },
+          "interval": {
+            "type": "number"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "running": {
+            "type": "boolean"
+          },
+          "watts": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sampleTime": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartPoint"
+            }
+          },
+          "today": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string",
+                "format": "date"
+              },
+              "start": {
+                "type": "number"
+              },
+              "energyWh": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "coveredSeconds": {
+                "type": "number"
+              },
+              "history": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChartPoint"
+                }
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "day",
+              "start",
+              "energyWh",
+              "coveredSeconds",
+              "history"
+            ]
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "energy_wh": {
+                  "type": "number"
+                },
+                "covered_seconds": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "retentionDays": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "now",
+          "hours",
+          "interval",
+          "timezone",
+          "running",
+          "watts",
+          "sampleTime",
+          "history",
+          "today",
+          "daily",
+          "retentionDays",
+          "error"
+        ],
+        "description": "Epoch timestamps in seconds; selected history is watts, today.history is cumulative Wh. Nulls preserve gaps. Daily totals reflect observed coverage; raw samples retained for 24 hours, daily totals for 90 days."
+      },
+      "Connection": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "localUrl": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "local": {
+            "type": "boolean"
+          },
+          "helperPath": {
+            "type": "string"
+          },
+          "fanInstaller": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "name",
+          "hostname",
+          "urls",
+          "localUrl",
+          "port",
+          "local",
+          "fanInstaller"
+        ],
+        "description": "helperPath appears only for loopback clients; addresses is omitted."
+      },
+      "BridgeResponse": {
+        "$ref": "mac-control-bridge.openapi.json#/components/schemas/BridgeResponse"
+      },
+      "HostStatus": {
+        "type": "object",
+        "required": [
+          "battery",
+          "tailscale"
+        ],
+        "properties": {
+          "battery": {
+            "type": "object",
+            "required": [
+              "available",
+              "present",
+              "percent",
+              "source",
+              "state"
+            ],
+            "properties": {
+              "available": {
+                "type": "boolean"
+              },
+              "present": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "percent": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100
+              },
+              "source": {
+                "enum": [
+                  "ac",
+                  "battery",
+                  "unknown"
+                ]
+              },
+              "state": {
+                "enum": [
+                  "charging",
+                  "charged",
+                  "discharging",
+                  "not-charging",
+                  "no-battery",
+                  "unknown",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "tailscale": {
+            "type": "object",
+            "required": [
+              "state"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "connected",
+                  "disconnected",
+                  "starting",
+                  "needs-login",
+                  "needs-approval",
+                  "not-installed",
+                  "unavailable"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

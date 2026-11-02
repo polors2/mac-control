@@ -1,0 +1,207 @@
+{
+  "document_type": "mac_control_api_and_use_cases",
+  "schema_version": 1,
+  "documentation_revision": "1.1.0",
+  "last_reviewed": "2026-11-02",
+  "human_readable_companion": "docs/API.md",
+  "api": {
+    "service": "Mac Control",
+    "implementation": "server.py",
+    "openapi": "packages/contracts/mac-control.openapi.json",
+    "route_prefix": "/api/",
+    "runtime_version_negotiation": false,
+    "default_origin": "http://localhost:8765",
+    "default_bind": "0.0.0.0:8765",
+    "authentication": {
+      "scheme": "cookie",
+      "name": "mac_control",
+      "login": "POST /api/session",
+      "initial_setup": "POST /api/setup",
+      "setup_loopback_only": true,
+      "logout": "POST /api/logout",
+      "session_seconds": 86400,
+      "remembered_seconds": 2592000,
+      "sliding_expiry": false,
+      "password_change_revokes_all_sessions": true,
+      "bearer_tokens_supported": false,
+      "session_not_required": [
+        "GET /api/session",
+        "POST /api/session",
+        "POST /api/setup",
+        "POST /api/stats/leave"
+      ]
+    },
+    "request_checks": {
+      "source": "private_or_loopback_or_link_local_per_python_ipaddress",
+      "host": "startup_allowlist_and_exact_configured_port",
+      "cross_site_fetch_rejected": true,
+      "post_origin": "exact_http_scheme_plus_Host",
+      "post_content_type": "application/json",
+      "post_body": "JSON object",
+      "post_min_bytes": 1,
+      "post_max_bytes": 4096,
+      "cors_supported": false
+    },
+    "response_policy": {
+      "handled_api_responses": "JSON",
+      "cache_control": "no-store",
+      "hardware_schema": "extensible_by_capability_and_helper_version",
+      "unsupported_methods": "standard_handler_unsupported_method_response_normally_501_HTML"
+    },
+    "operation_count": 21,
+    "live_contract_endpoint": null,
+    "host_status": {
+      "endpoint": "GET /api/host-status",
+      "authentication": "mac_control_session_cookie",
+      "implementation": "host_status.py",
+      "cache_seconds": 10,
+      "command_timeout_seconds": 2,
+      "read_only": true,
+      "battery_source": "pmset -g batt",
+      "tailscale_source": "tailscale status --json --peers=false",
+      "tailscale_connected_requires": "BackendState=Running and Self.Online=true",
+      "peer_and_account_details_returned": false,
+      "browser_poll_delay_ms": 10000,
+      "pause_when": [
+        "page_hidden",
+        "signed_out",
+        "page_unloaded"
+      ]
+    }
+  },
+  "use_cases": [
+    {
+      "id": "notifier-copy-progress",
+      "order": 1,
+      "title": "Display DevBox Notifier copy activity in Mac Control",
+      "first_use_case_basis": "User identification of Notifier as the first use case; no deployment date inferred.",
+      "human_guide": "docs/integrations/mac-control.md",
+      "implementation_sources": [
+        "server.py",
+        "mac_control_bridge.py",
+        "web/notifier-activity.js",
+        "test_notifier_bridge.py",
+        "test_copy_progress.py"
+      ],
+      "upstream_contract": {
+        "owner": "separate DevBox Notifier repository",
+        "contract_version": "1.1.0",
+        "as_of": "2026-11-01",
+        "manifest": "packages/contracts/mac-control-integration.json",
+        "openapi": "packages/contracts/openapi.json",
+        "bridge_openapi": "packages/contracts/mac-control-bridge.openapi.json",
+        "payload_schema": "packages/contracts/mac-control-activity.schema.json",
+        "examples": "packages/contracts/mac-control-examples.json"
+      },
+      "flow": [
+        {
+          "from": "mac_control_browser",
+          "to": "mac_control_server",
+          "method": "GET",
+          "path": "/api/file-activity",
+          "authentication": "mac_control_session_cookie"
+        },
+        {
+          "from": "mac_control_server",
+          "to": "notifier",
+          "method": "GET",
+          "url_template": "http://127.0.0.1:{port}/v1/snapshot",
+          "authentication": "administrator_bearer_from_state_dir/admin-token",
+          "default_port": 8876
+        }
+      ],
+      "ingestion_endpoint": null,
+      "notifier_posts_to_mac_control": false,
+      "mac_control_uses_websocket": false,
+      "configuration": {
+        "file": ".runtime/notifier-bridge.json",
+        "fields": [
+          "state_dir",
+          "port"
+        ],
+        "schema_ref": "packages/contracts/mac-control-activity.schema.json#/$defs/BridgeConfig",
+        "private_untracked": true,
+        "credential_delivered_to_browser": false
+      },
+      "upstream_request": {
+        "timeout_seconds": 2,
+        "max_response_bytes": 2097152,
+        "environment_proxies": false,
+        "fixed_host": "127.0.0.1",
+        "runtime_json_schema_validation": false
+      },
+      "polling": {
+        "delay_after_completed_request_ms": 2000,
+        "pause_when": [
+          "page_hidden",
+          "signed_out",
+          "page_unloaded"
+        ],
+        "per_visible_client": true,
+        "shared_server_poll_cache": false
+      },
+      "response": {
+        "healthy_fields": [
+          "available",
+          "transfers",
+          "file_activity",
+          "finder_progress",
+          "push"
+        ],
+        "older_upstream_missing_finder_progress": {},
+        "upstream_telemetry_forwarded": false,
+        "availability_means": "bridge obtained selected snapshot fields; not Finder permission or copy completion",
+        "unavailable_http_status": 200,
+        "unavailable_payload": {
+          "available": false,
+          "reason": "notifier_unavailable",
+          "transfers": [],
+          "file_activity": {
+            "items": []
+          }
+        },
+        "unavailable_missing_fields": [
+          "finder_progress",
+          "push",
+          "file_activity.observer"
+        ],
+        "unauthorized_status": 401,
+        "rejected_request_status": 403,
+        "authorization_precedes_upstream_request": true
+      },
+      "local_client_display": {
+        "max_cards": 8,
+        "overall_progress": true,
+        "file_details": "first active display_name plus count of additional current files; no per-file progress rows",
+        "finder_filter": "English copy/move/duplicate/preparing/replacing/verifying operation label plus measured byte/time detail",
+        "managed_filter": "nonterminal nonsynthetic with finite nonnegative bytes_done and positive bytes_total",
+        "localized_labels_may_be_omitted": true,
+        "filesystem_hints_shown": false,
+        "terminal_jobs_shown": false,
+        "synthetic_jobs_shown": false,
+        "on_request_failure_or_unavailable": "hide_copy_section",
+        "rendering": "update_existing_keyed_cards"
+      },
+      "semantics": {
+        "finder_percent": "reported_by_finder_accessibility",
+        "finder_current_file_metadata": "estimated",
+        "window_disappearance_proves_completion": false,
+        "managed_copy_completion": "worker_verification_and_exclusive_finalization",
+        "notifications": "separate outbound Notifier Web Push or provisioned APNs; no delivery via Mac Control"
+      },
+      "verification_scope": "Reviewed local implementation and existing exported contracts; no live Notifier service check."
+    }
+  ],
+  "maintenance": {
+    "implementation_authoritative": true,
+    "update_together": [
+      "docs/API.md",
+      "packages/contracts/mac-control.openapi.json",
+      "packages/contracts/mac-control-api.json",
+      "MEMORY.md",
+      "MEMORY.json"
+    ],
+    "notifier_bundle_regeneration": "Run export_contracts.py in the separate Notifier repository; see docs/integrations/mac-control.md.",
+    "documentation_only_restart_required": false
+  }
+}
