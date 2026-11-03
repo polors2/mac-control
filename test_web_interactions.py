@@ -83,6 +83,13 @@ class WebInteractionTests(unittest.TestCase):
         scripts = {path.name: path.read_text() for path in self.web.glob('*.js')}
         self.assertTrue(self.evaluate('const scripts=' + json.dumps(scripts) + '; Object.values(scripts).forEach(source=>new Function(source)); JSON.stringify(true);'))
 
+    def test_api_paths_preserve_proxy_prefix_and_query_strings(self):
+        source = (self.web / 'app.js').read_text().split('function appPath(')[1].split('async function api(')[0]
+        for prefix in ('', '/mc'):
+            script = 'const document={querySelector:()=>({content:' + json.dumps(prefix) + '})};function appPath(' + source
+            self.assertEqual(self.evaluate(script + 'JSON.stringify(appPath("/api/stats?viewer=abc"));'),
+                             prefix + '/api/stats?viewer=abc')
+
     def claude_pill(self, data, signed_in=True, now=1_800_000_000, provider="claude"):
         five, seven = ("claude-five-hour", "claude-seven-day") if provider == "claude" else ("codex-primary", "codex-secondary")
         source = (self.web / 'host-status.js').read_text().split('const claudeResetClock')[1].split('function scheduleHostStatus')[0]

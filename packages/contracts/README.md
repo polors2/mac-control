@@ -5,7 +5,7 @@ Reviewed on 2026-11-02. These files contain no live credentials or runtime state
 | File | Owner and scope |
 | --- | --- |
 | [mac-control-api.json](mac-control-api.json) | Mac Control: API discovery, operating rules and first use case (Notifier). |
-| [mac-control.openapi.json](mac-control.openapi.json) | Mac Control: all current GET/POST `/api/` operations, request schemas, authentication and responses. Human companion: [API guide](../../docs/API.md). Documentation revision 1.3.0, not a runtime API version. |
+| [mac-control.openapi.json](mac-control.openapi.json) | Mac Control: all current GET/POST `/api/` operations, request schemas, authentication and responses. Human companion: [API guide](../../docs/API.md). Documentation revision 1.4.0, not a runtime API version. |
 | [mac-control-integration.json](mac-control-integration.json) | Notifier export: integration topology, upstream operation inventory and semantic guarantees. |
 | [mac-control-bridge.openapi.json](mac-control-bridge.openapi.json) | Notifier export: Mac Control's `/api/file-activity` route only. |
 | [mac-control-activity.schema.json](mac-control-activity.schema.json) | Notifier export: JSON Schema 2020-12 for activity/configuration payloads. |

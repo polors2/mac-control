@@ -303,7 +303,7 @@ Private `.runtime/power.sqlite3` (0600 inside 0700 `.runtime`) retains 24 hours 
 
 ## Local access boundary
 
-The dashboard listens on IPv4 port 8765 and rejects public client IPs. It checks Host and Origin, requires a password, rate-limits sign-in attempts, and uses revocable HttpOnly/SameSite cookies. It exposes only specific hardware operations, with no arbitrary shell endpoint. This is HTTP for a trusted intranet: traffic is not encrypted. Do not forward the port to the internet.
+The dashboard listens on IPv4 port 8765 and rejects public client IPs. It checks Host and Origin, requires a password, rate-limits sign-in attempts, and uses revocable HttpOnly/SameSite cookies. It exposes only specific hardware operations, with no arbitrary shell endpoint. Direct LAN access is HTTP for a trusted intranet; its traffic is not encrypted. The optional Tailscale Serve mount provides HTTPS within the tailnet. Do not forward the dashboard port to the internet.
 
 For loopback-only foreground operation, use `python3 server.py --host 127.0.0.1`. A custom port is supported by the foreground server; the supplied persistent service uses 8765.
 
@@ -332,3 +332,27 @@ Panel stacks use content-sized cards. Target/Constant controls and additional dr
 Encrypted APFS volumes can be unlocked from the password dialog. Passwords are passed through stdin to the fixed native USB helper and macOS diskutil, never argv or saved state. Both layers validate eligible external USB identity before unlock; line breaks/NUL/oversize inputs are rejected. APFS lock metadata is read only for unmounted candidates. Mounting targets eligible volumes instead of the synthetic APFS container. Locked saved selections wait for manual password entry rather than repeatedly attempting unlock at startup. UI retry/success/field-clearing flows are tested against simulated encrypted volumes; connected user drives were left mounted throughout validation.
 
 Daily energy history uses a fixed 90-calendar-day line chart. Lines connect consecutive recorded days and break across unrecorded days; missing dates are never plotted as zero. Zero-energy days remain valid points. Today is an open point, with partial-day coverage labeled. The dialog shows logged total, recorded-day count, and today’s energy; the table is available under Daily values. The overview groups current draw in the power header above two equal-width plots.
+
+## Tailscale Serve mount
+
+`tailscale_serve.py` loads optional `.runtime/tailscale-serve.json` at startup
+(maximum 4096 bytes). Its `origin` must be an exact lowercase HTTPS hostname
+under ts.net; its `path_prefix` must contain only slash-separated alphanumeric,
+underscore or hyphen segments. Invalid configuration fails startup. An absent
+file leaves direct local/LAN operation available.
+
+A forwarded request is accepted only from loopback with exact configured Host
+and X-Forwarded-Host, X-Forwarded-Proto=https, and no Tailscale-Funnel-Request.
+Any forwarded headers without that trusted context are rejected. POST Origin
+must equal the configured HTTPS origin; cross-site requests remain rejected.
+Serve strips the `/mc` mount before forwarding, so backend routes stay `/api/*`.
+The server rewrites HTML asset/home links and the mac-control-base meta tag for
+that context; `appPath()` prefixes all fetches, including the stats leave call.
+No extra dashboard process or backend port is needed.
+
+The proxy's loopback connection never grants localhost setup/helper-path
+privileges. HTTPS login/logout cookies retain HttpOnly/SameSite=Strict and add
+Secure with Path=/mc/ (the configured prefix plus slash). Local/LAN cookies
+retain Path=/. Failed logins through Serve share the proxy's loopback rate-limit
+bucket. Existing sessions are still validated by the same auth store.
+See the [mbp15 runbook](machines/mbp15.md) for publication and removal commands.

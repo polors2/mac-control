@@ -74,10 +74,11 @@ docs/API.md, packages/contracts/mac-control.openapi.json and
 packages/contracts/mac-control-api.json.
 
 - The current implementation has 21 GET/POST operations under /api/. The API
-  documentation revision is 1.3.0; the runtime has no negotiated API version or
+  documentation revision is 1.4.0; the runtime has no negotiated API version or
   live OpenAPI route. Hardware response schemas remain extensible.
 - Requests require private/loopback/link-local source and known Host/port checks;
-  cross-site fetches are rejected. POST requires an exact http://Host Origin and
+  cross-site fetches are rejected. POST requires exact http://Host Origin for direct
+  access or the configured HTTPS origin for trusted loopback Tailscale Serve, and
   a JSON object from 1 through 4096 bytes, even for login and logout.
 - Private routes use the mac_control cookie, with fixed 24-hour normal or 30-day
   remembered expiry. Session inspection, sign-in, first setup and stats/leave do
@@ -237,3 +238,17 @@ A matching pill beside Claude shows Codex quota percentages used, actual window 
 - Claude and Codex stay together in a flex group; quota windows stack at laptop widths and on mobile, with both provider names visible.
 
 Sources: [codex_usage.py](codex_usage.py), [host_status.py](host_status.py), [server.py](server.py), [web/host-status.js](web/host-status.js), [web/index.html](web/index.html), [web/compact.css](web/compact.css), [test_codex_usage.py](test_codex_usage.py), [test_host_status.py](test_host_status.py), [test_web_interactions.py](test_web_interactions.py), [README.md](README.md), [docs/API.md](docs/API.md), [docs/REFERENCE.md](docs/REFERENCE.md), [docs/machines/mbp15.md](docs/machines/mbp15.md), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json).
+
+## tailscale-serve-publication — Private HTTPS publication at /mc
+
+Kind: `operational`. Last reviewed: `2026-11-03`.
+
+On mbp15, Mac Control is published privately at https://mbp15.tail19753.ts.net/mc through persistent Tailscale Serve.
+
+- The /mc Serve mount proxies to the existing 127.0.0.1:8765 dashboard. Existing / (8080), /tmb (8877) and HTTPS 8443 (8876) routes are preserved; Funnel is not enabled.
+- Optional .runtime/tailscale-serve.json (0600) specifies exact lowercase HTTPS ts.net origin and path_prefix; read at startup with a 4096-byte cap. Invalid configuration fails startup.
+- Forwarded requests require a loopback TCP peer, exact configured Host and X-Forwarded-Host, and X-Forwarded-Proto=https. Untrusted forwarding and Funnel-marked requests are rejected; POST Origin must match the configured HTTPS origin.
+- The existing dashboard password and session checks remain required. Serve never grants localhost-only first setup or helper-path access. HTTPS cookies use Secure and the prefix scope (/mc/); direct local/LAN cookies retain Path=/. Serve sign-in failures share the proxy loopback rate-limit bucket.
+- Serve strips the mount; server HTML links/meta and browser fetches preserve the prefix externally. Publish with tailscale serve --bg --https=443 --set-path=/mc http://127.0.0.1:8765; remove only this route with tailscale serve --https=443 --set-path=/mc off. Python/config changes need only a dashboard restart.
+
+Sources: [tailscale_serve.py](tailscale_serve.py), [server.py](server.py), [web/app.js](web/app.js), [web/stats.js](web/stats.js), [web/index.html](web/index.html), [test_tailscale_serve.py](test_tailscale_serve.py), [test_web_interactions.py](test_web_interactions.py), [README.md](README.md), [docs/API.md](docs/API.md), [docs/REFERENCE.md](docs/REFERENCE.md), [docs/machines/mbp15.md](docs/machines/mbp15.md), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json).

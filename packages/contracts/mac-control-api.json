@@ -1,7 +1,7 @@
 {
   "document_type": "mac_control_api_and_use_cases",
   "schema_version": 1,
-  "documentation_revision": "1.3.0",
+  "documentation_revision": "1.4.0",
   "last_reviewed": "2026-11-03",
   "human_readable_companion": "docs/API.md",
   "api": {
@@ -35,12 +35,13 @@
       "source": "private_or_loopback_or_link_local_per_python_ipaddress",
       "host": "startup_allowlist_and_exact_configured_port",
       "cross_site_fetch_rejected": true,
-      "post_origin": "exact_http_scheme_plus_Host",
+      "post_origin": "exact_http_scheme_plus_Host_for_direct_access_or_exact_configured_https_origin_for_trusted_loopback_Serve",
       "post_content_type": "application/json",
       "post_body": "JSON object",
       "post_min_bytes": 1,
       "post_max_bytes": 4096,
-      "cors_supported": false
+      "cors_supported": false,
+      "forwarded_headers": "reject_unless_exact_configured_loopback_https_Serve_context"
     },
     "response_policy": {
       "handled_api_responses": "JSON",
@@ -133,6 +134,31 @@
       "requiresPassword_means_target_still_locked": true,
       "raw_unlock_diagnostics_returned": false,
       "password_storage": false
+    },
+    "tailscale_serve": {
+      "configuration": ".runtime/tailscale-serve.json",
+      "config_fields": [
+        "origin",
+        "path_prefix"
+      ],
+      "config_max_bytes": 4096,
+      "origin": "exact_lowercase_https_HOST.TAILNET.ts.net",
+      "proxy_source": "loopback_only",
+      "matching_headers": [
+        "Host=origin_host",
+        "X-Forwarded-Host=origin_host",
+        "X-Forwarded-Proto=https"
+      ],
+      "funnel_requests": "rejected",
+      "session_required": true,
+      "first_setup_allowed": false,
+      "helper_path_allowed": false,
+      "cookie": "HttpOnly; SameSite=Strict; Path=path_prefix/; Secure",
+      "backend_path_prefix": "stripped_by_Tailscale_Serve",
+      "frontend_paths": "HTML_links_meta_and_fetches_use_path_prefix",
+      "rate_limiting": "shares_proxy_loopback_source_bucket",
+      "mbp15_url": "https://mbp15.tail19753.ts.net/mc",
+      "public_funnel_enabled": false
     }
   },
   "use_cases": [

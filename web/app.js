@@ -43,11 +43,15 @@ const presets = {
   quiet:{name:'Quiet time',brightness:50,keyboard:30,volume:0,mute:1}
 };
 
+function appPath(path) {
+  return `${document.querySelector('meta[name="mac-control-base"]')?.content || ''}${path}`;
+}
+
 async function api(path, body, timeoutMs=12000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(path, {method:body === undefined ? 'GET':'POST',
+    const response = await fetch(appPath(path), {method:body === undefined ? 'GET':'POST',
       headers:body === undefined ? {} : {'Content-Type':'application/json'},
       body:body === undefined ? undefined : JSON.stringify(body), signal:controller.signal});
     const result = await response.json();

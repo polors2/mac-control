@@ -37,6 +37,25 @@ Accessibility approval and external notifier integration may use that path.
 It is an alias to the same state, not a second database or running instance.
 The remaining old source files are retained for recovery and are inactive.
 
+Mac Control is also served privately at <https://mbp15.tail19753.ts.net/mc>.
+Tailscale Serve's persistent `/mc` mount proxies to `http://127.0.0.1:8765`;
+the existing `/` (8080), `/tmb` (8877), and HTTPS 8443 (8876) routes remain.
+No Funnel is enabled. `.runtime/tailscale-serve.json` (0600) contains
+`origin=https://mbp15.tail19753.ts.net` and `path_prefix=/mc`; `server.py` reads
+it on startup. The existing dashboard password is required. Tailscale HTTPS
+cookies are Secure and scoped to `/mc/`; local/LAN cookies keep their old scope.
+Forwarded requests cannot perform localhost-only first password setup.
+
+```sh
+tailscale serve status
+tailscale serve --bg --https=443 --set-path=/mc http://127.0.0.1:8765
+# Remove just Mac Control; preserve the other services:
+tailscale serve --https=443 --set-path=/mc off
+```
+
+After changing Python or the private origin configuration, restart only the
+dashboard. After a hostname change, update the exact origin before restarting.
+
 The Claude usage pill reads `.runtime/claude-usage.json`. The dashboard's
 background usage check writes it by running `~/.local/bin/claude` (verified
 under the launch agent on 2026-11-03, including Fable). Claude Code's

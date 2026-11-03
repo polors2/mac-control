@@ -67,6 +67,25 @@ These approvals require your clicks in macOS. They are not silently granted. The
 - **On the host Mac:** <http://localhost:8765>
 - **On another local device:** `http://YOUR_MAC_IP:8765`
 
+**Tailscale HTTPS:** on mbp15, open [Mac Control over Tailscale](https://mbp15.tail19753.ts.net/mc).
+Your device must be on the tailnet; sign in with the existing dashboard password.
+Tailscale Serve routes `/mc` to the existing dashboard on port 8765. The existing
+root and `/tmb` services are preserved. This uses private Serve, with no Funnel.
+
+To configure another host, save `.runtime/tailscale-serve.json` (mode 0600) with
+its exact origin and mount path, for example:
+
+```json
+{"origin":"https://YOUR_MAC.YOUR_TAILNET.ts.net","path_prefix":"/mc"}
+```
+
+Use the actual lowercase hostname in place of the placeholders. Restart only
+the dashboard, then run `tailscale serve --bg --https=443 --set-path=/mc http://127.0.0.1:8765`.
+The HTTPS cookie is scoped to `/mc/` and marked Secure; local/LAN access keeps
+working at its existing address. First-time password setup must still happen
+on the host Mac at localhost. To remove only this route, run
+`tailscale serve --https=443 --set-path=/mc off`. Do not reset the other Serve routes.
+
 The **Network** button shows the host's local addresses. Sign in with the dashboard password you chose. The devices need to be able to reach each other on the LAN; guest Wi-Fi isolation, firewall settings, or browser local-network permissions may affect access.
 
 ## Dashboard layout
