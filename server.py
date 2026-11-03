@@ -21,6 +21,8 @@ from controls import ControlManager
 from metrics import StatsMonitor
 from power import PowerMonitor
 from host_status import HostStatus
+from claude_usage import USAGE_FILE as CLAUDE_USAGE_FILE, UsageProbe
+from codex_usage import UsageProbe as CodexUsageProbe
 from fans import FanController
 from graphics import GraphicsController
 from drives import DriveManager
@@ -28,6 +30,7 @@ from inputs import InputController
 from build_controls_app import build as build_controls_app, APP_NAME, EXECUTABLE_NAME
 from brightness import BrightnessKeeper
 from persistence import StartupRestore
+from tailscale_serve import load_config as load_serve_config
 
 ROOT = Path(__file__).resolve().parent
 WEB = ROOT / 'web'
@@ -40,12 +43,13 @@ AUTH = None
 CONTROLS = None
 STATS = None
 POWER = None
-HOST_STATUS = HostStatus()
+HOST_STATUS = HostStatus(CLAUDE_USAGE_FILE, UsageProbe(CLAUDE_USAGE_FILE), CodexUsageProbe())
 FANS = None
 DRIVES = None
 INPUTS = None
 GRAPHICS = None
 HOSTS = set()
+SERVE_CONFIG = None
 INFO = {}
 
 
@@ -132,6 +136,8 @@ class Handler(BaseHTTPRequestHandler):
             pass  # The browser navigated away while a request was finishing.
 
     def valid_host(self):
+        if self.proxied():
+            return True
         host = self.headers.get('Host', '')
         try:
             parsed = urlsplit('http://' + host)
@@ -145,17 +151,29 @@ class Handler(BaseHTTPRequestHandler):
             private = ip.is_private or ip.is_loopback or ip.is_link_local
         except ValueError:
             private = False
-        if not private or not self.valid_host():
+        if not private or (self.forwarded() and not self.proxied()) or not self.valid_host():
             self.json(403, {'error': 'This service only accepts local network connections and known host addresses.'})
             return False
         origin = self.headers.get('Origin')
-        if (write and origin != 'http://' + self.headers.get('Host')) or self.headers.get('Sec-Fetch-Site') == 'cross-site':
+        expected_origin = SERVE_CONFIG.origin if self.proxied() else 'http://' + self.headers.get('Host')
+        if (write and origin != expected_origin) or self.headers.get('Sec-Fetch-Site') == 'cross-site':
             self.json(403, {'error': 'Open the control panel directly to send commands.'})
             return False
         return True
 
+    def proxied(self):
+        return SERVE_CONFIG is not None and SERVE_CONFIG.matches(self.client_address[0], self.headers)
+
+    def forwarded(self):
+        return any(name in self.headers for name in (
+            'X-Forwarded-Host', 'X-Forwarded-Proto', 'X-Forwarded-For', 'Tailscale-Funnel-Request'))
+
     def local(self):
-        return ipaddress.ip_address(self.client_address[0]).is_loopback
+        # A tailnet visitor is not local merely because Serve connects over loopback.
+        return ipaddress.ip_address(self.client_address[0]).is_loopback and not self.forwarded()
+
+    def cookie_scope(self):
+        return f'Path={SERVE_CONFIG.path_prefix}/; Secure' if self.proxied() else 'Path=/'
 
     def session_token(self):
         jar = cookies.SimpleCookie()
@@ -170,7 +188,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def new_session(self, remember):
         token = AUTH.new_session(remember)
-        cookie = f'mac_control={token}; HttpOnly; SameSite=Strict; Path=/'
+        cookie = f'mac_control={token}; HttpOnly; SameSite=Strict; {self.cookie_scope()}'
         if remember:
             cookie += f'; Max-Age={REMEMBER_SECONDS}'
         self.json(200, {'authenticated': True, 'remembered': remember}, cookie)
@@ -262,7 +280,10 @@ class Handler(BaseHTTPRequestHandler):
             self.json(404, {'error': 'Not found.'})
             return
         name, mime = files[path]
-        self.respond(200, (WEB / name).read_bytes(), mime)
+        body = (WEB / name).read_bytes()
+        if name == 'index.html' and self.proxied():
+            body = SERVE_CONFIG.render_html(body)
+        self.respond(200, body, mime)
 
     def do_POST(self):
         if not self.allowed(write=True):
@@ -327,7 +348,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == '/api/logout':
             AUTH.delete_session(self.session_token())
-            self.json(200, {'authenticated': False}, 'mac_control=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0')
+            self.json(200, {'authenticated': False}, f'mac_control=; HttpOnly; SameSite=Strict; {self.cookie_scope()}; Max-Age=0')
             return
         try:
             if path == '/api/graphics':
@@ -394,11 +415,12 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global AUTH, CONTROLS, STATS, POWER, FANS, DRIVES, INPUTS, GRAPHICS, INFO, HOSTS
+    global AUTH, CONTROLS, STATS, POWER, FANS, DRIVES, INPUTS, GRAPHICS, INFO, HOSTS, SERVE_CONFIG
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', type=int, default=8765)
     parser.add_argument('--host', default='0.0.0.0', choices=['0.0.0.0', '127.0.0.1'])
     args = parser.parse_args()
+    SERVE_CONFIG = load_serve_config(RUNTIME / 'tailscale-serve.json')
     prepare()
     AUTH = AuthStore(RUNTIME / 'auth.sqlite3')
     CONTROLS = ControlManager(CONTROLS_BINARY, RUNTIME / 'control-levels.json',

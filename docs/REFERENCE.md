@@ -26,6 +26,78 @@ with explicit unavailable states. No privileged helper or Tailscale setting chan
 are needed. `web/host-status.js` polls every ten seconds after completion while
 visible and authenticated, discarding late responses on pause/sign-out.
 
+## Claude plan usage pill
+
+`claude_usage.py` writes `.runtime/claude-usage.json` (0600, atomic replace,
+`flock` on `claude-usage.lock`) from two Claude Code sources, and reads it for
+the dashboard. Only usage windows are stored. Session IDs, paths, prompts, model
+data, spend, credits and credentials are never stored. Mac Control sends nothing
+over the network for this feature.
+
+- **Status line relay** (`main`, `relay`): run by Claude Code as its
+  `statusLine` command. Keeps `rate_limits.five_hour` and
+  `rate_limits.seven_day` (`used_percentage`, `resets_at`), prints
+  `5h N% · 7d N% · Fable N%` from the merged file, and always exits 0.
+- **Usage check** (`UsageProbe`, `query_usage`, `parse_probe`): `HostStatus`
+  calls `poke()` whenever it refreshes its cache. This happens only while an
+  authenticated, visible dashboard requests host status. At most every five
+  minutes, a background thread runs
+  `claude -p --input-format stream-json --output-format stream-json --verbose --no-session-persistence --strict-mcp-config --setting-sources ''`
+  from the home directory with `DISABLE_AUTOUPDATER=1`. It sends only the
+  `initialize` and `get_usage` (`skip_behaviors: true`) control requests,
+  reads up to 4 MiB of output until the usage reply, and kills the process
+  after 30 seconds. No user message is sent, so no model request is made. The
+  CLI is found at `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`,
+  `~/.claude/local` or `PATH`. The check keeps `five_hour` and `seven_day`
+  (`utilization`, ISO `resets_at`) and per-model weekly windows from
+  `model_scoped`, falling back to `limits[]` rows with `kind=weekly_scoped`.
+  Names must be printable and at most 40 characters; at most 4 are kept. A
+  reply without per-model data (a cached answer) keeps the stored list; an
+  explicit empty list clears it. Failures are logged once per distinct fixed
+  message, never with CLI output. `get_usage` is experimental in Claude Code,
+  so parsing is defensive.
+
+Merging keeps the highest usage for reports whose `resets_at` values are within
+an hour of each other, so an idle session cannot lower a newer reading. A later
+window replaces an earlier one, and a window missing from a report keeps its
+previous value. `usage_status()` reports a missing file as `not-configured` and
+an invalid file, or one over 4 KiB, as `unavailable`. It turns windows past
+`resetsAt` into null and omits expired `modelWeekly` entries. The pill in
+`web/index.html` sits in `.topbar-modes` with the graphics toggle.
+`renderClaudeUsage()` in `web/host-status.js` rounds and clamps for display,
+shows `—` for null 5h/7d windows, and shows the Fable window (or the first
+per-model window) only when one is reported. It dims readings older than 30
+minutes and lists every window with its Manila reset time in the tooltip.
+
+Responsive layout: Claude and Codex share a flex group so they stay together.
+At laptop widths (701–1600px), each pill stacks its windows and hides meters;
+the group can wrap below the graphics toggle. On mobile the windows also stack,
+the icons hide, and both provider names stay visible.
+
+## Codex plan usage pill
+
+`codex_usage.py` runs a shared demand-driven background check from `HostStatus`
+on authenticated requests. It finds the Codex CLI through PATH, the Codex or
+ChatGPT app bundle, `~/.local/bin`, `/opt/homebrew/bin` or `/usr/local/bin`.
+`query_usage()` starts `codex app-server --listen stdio://` from the home
+directory, completes the initialize/initialized handshake, and requests only
+`account/rateLimits/read`. It terminates and reaps the child after the reply;
+a timer kills it after 30 seconds and total stdout is capped at 1 MiB. It never
+starts a thread, prompt or turn. Codex handles its own authentication. Mac Control
+never reads its credential files; stderr and raw RPC errors are discarded.
+The protocol is documented in the [official OpenAI documentation](https://learn.chatgpt.com/docs/app-server).
+
+`parse_usage()` selects only the `codex` bucket from `rateLimitsByLimitId`, falling
+back to the legacy `rateLimits` view only when the map is absent. It validates
+primary/secondary percentages, epoch reset times and integer window durations.
+`UsageProbe` checks at most every 300 seconds, never concurrently, and retains
+only the latest sanitized reading in memory. Failures log only fixed messages
+and preserve that reading and its timestamp. Missing CLI and failed first reads
+are explicit. Expired windows become null. Nothing is written to runtime state.
+`renderCodexUsage()` shares the Claude pill's meters, thresholds, freshness and
+Manila time formatting, but derives duration labels from reported minutes and
+clears readings when signed out. The two provider names remain visible on mobile.
+
 ## Dashboard interaction behavior
 
 Mobile navigation uses sticky tabs, content-sized panes, a viewport-sized minimum
@@ -231,7 +303,7 @@ Private `.runtime/power.sqlite3` (0600 inside 0700 `.runtime`) retains 24 hours 
 
 ## Local access boundary
 
-The dashboard listens on IPv4 port 8765 and rejects public client IPs. It checks Host and Origin, requires a password, rate-limits sign-in attempts, and uses revocable HttpOnly/SameSite cookies. It exposes only specific hardware operations, with no arbitrary shell endpoint. This is HTTP for a trusted intranet: traffic is not encrypted. Do not forward the port to the internet.
+The dashboard listens on IPv4 port 8765 and rejects public client IPs. It checks Host and Origin, requires a password, rate-limits sign-in attempts, and uses revocable HttpOnly/SameSite cookies. It exposes only specific hardware operations, with no arbitrary shell endpoint. Direct LAN access is HTTP for a trusted intranet; its traffic is not encrypted. The optional Tailscale Serve mount provides HTTPS within the tailnet. Do not forward the dashboard port to the internet.
 
 For loopback-only foreground operation, use `python3 server.py --host 127.0.0.1`. A custom port is supported by the foreground server; the supplied persistent service uses 8765.
 
@@ -260,3 +332,27 @@ Panel stacks use content-sized cards. Target/Constant controls and additional dr
 Encrypted APFS volumes can be unlocked from the password dialog. Passwords are passed through stdin to the fixed native USB helper and macOS diskutil, never argv or saved state. Both layers validate eligible external USB identity before unlock; line breaks/NUL/oversize inputs are rejected. APFS lock metadata is read only for unmounted candidates. Mounting targets eligible volumes instead of the synthetic APFS container. Locked saved selections wait for manual password entry rather than repeatedly attempting unlock at startup. UI retry/success/field-clearing flows are tested against simulated encrypted volumes; connected user drives were left mounted throughout validation.
 
 Daily energy history uses a fixed 90-calendar-day line chart. Lines connect consecutive recorded days and break across unrecorded days; missing dates are never plotted as zero. Zero-energy days remain valid points. Today is an open point, with partial-day coverage labeled. The dialog shows logged total, recorded-day count, and today’s energy; the table is available under Daily values. The overview groups current draw in the power header above two equal-width plots.
+
+## Tailscale Serve mount
+
+`tailscale_serve.py` loads optional `.runtime/tailscale-serve.json` at startup
+(maximum 4096 bytes). Its `origin` must be an exact lowercase HTTPS hostname
+under ts.net; its `path_prefix` must contain only slash-separated alphanumeric,
+underscore or hyphen segments. Invalid configuration fails startup. An absent
+file leaves direct local/LAN operation available.
+
+A forwarded request is accepted only from loopback with exact configured Host
+and X-Forwarded-Host, X-Forwarded-Proto=https, and no Tailscale-Funnel-Request.
+Any forwarded headers without that trusted context are rejected. POST Origin
+must equal the configured HTTPS origin; cross-site requests remain rejected.
+Serve strips the `/mc` mount before forwarding, so backend routes stay `/api/*`.
+The server rewrites HTML asset/home links and the mac-control-base meta tag for
+that context; `appPath()` prefixes all fetches, including the stats leave call.
+No extra dashboard process or backend port is needed.
+
+The proxy's loopback connection never grants localhost setup/helper-path
+privileges. HTTPS login/logout cookies retain HttpOnly/SameSite=Strict and add
+Secure with Path=/mc/ (the configured prefix plus slash). Local/LAN cookies
+retain Path=/. Failed logins through Serve share the proxy's loopback rate-limit
+bucket. Existing sessions are still validated by the same auth store.
+See the [mbp15 runbook](machines/mbp15.md) for publication and removal commands.

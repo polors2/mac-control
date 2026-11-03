@@ -362,7 +362,7 @@ $('#fan-setup').addEventListener('click',async()=>{
 });
 
 function leaveViewer() {
-  fetch('/api/stats/leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({viewer:viewerId}),keepalive:true}).catch(()=>{});
+  fetch(appPath('/api/stats/leave'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({viewer:viewerId}),keepalive:true}).catch(()=>{});
 }
 function pauseStats() {
   clearTimeout(statsTimer); statsGeneration++; leaveViewer();

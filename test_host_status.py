@@ -2,7 +2,7 @@
 import json
 import subprocess
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from host_status import HostStatus, battery_status, tailscale_status
 
@@ -66,6 +66,21 @@ class HostStatusTests(unittest.TestCase):
         with patch.object(monitor, 'run', return_value='') as run:
             self.assertEqual(monitor.snapshot()['tailscale']['state'], 'not-installed')
             self.assertEqual(run.call_count, 1)
+
+    @patch('host_status.Path.is_file', return_value=False)
+    def test_codex_probe_is_shared_with_host_cache(self, _missing):
+        probe = Mock()
+        probe.snapshot.return_value = {'state': 'checking', 'updatedAt': None, 'primary': None, 'secondary': None}
+        monitor = HostStatus(codex_probe=probe)
+        with patch.object(monitor, 'run', return_value=''), patch('host_status.time.monotonic', return_value=100):
+            self.assertEqual(monitor.snapshot()['codex'], probe.snapshot.return_value)
+            monitor.snapshot()
+        probe.poke.assert_called_once()
+        probe.snapshot.assert_called_once()
+        probe.snapshot.return_value = {'state': 'available', 'updatedAt': 100, 'primary': None, 'secondary': None}
+        with patch.object(monitor, 'run', return_value=''), patch('host_status.time.monotonic', return_value=111):
+            self.assertEqual(monitor.snapshot()['codex']['state'], 'available')
+        self.assertEqual(probe.poke.call_count, 2)
 
 
 if __name__ == '__main__':

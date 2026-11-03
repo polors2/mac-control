@@ -74,10 +74,11 @@ docs/API.md, packages/contracts/mac-control.openapi.json and
 packages/contracts/mac-control-api.json.
 
 - The current implementation has 21 GET/POST operations under /api/. The API
-  documentation revision is 1.1.1; the runtime has no negotiated API version or
+  documentation revision is 1.4.0; the runtime has no negotiated API version or
   live OpenAPI route. Hardware response schemas remain extensible.
 - Requests require private/loopback/link-local source and known Host/port checks;
-  cross-site fetches are rejected. POST requires an exact http://Host Origin and
+  cross-site fetches are rejected. POST requires exact http://Host Origin for direct
+  access or the configured HTTPS origin for trusted loopback Tailscale Serve, and
   a JSON object from 1 through 4096 bytes, even for login and logout.
 - Private routes use the mac_control cookie, with fixed 24-hour normal or 30-day
   remembered expiry. Session inspection, sign-in, first setup and stats/leave do
@@ -176,15 +177,29 @@ Sources: [README.md](README.md), [AGENTS.md](AGENTS.md),
 
 ## host-status-indicators — Read-only host battery and Tailscale indicators
 
-Kind: `project`. Last reviewed: `2026-11-02`.
+Kind: `project`. Last reviewed: `2026-11-03`.
 
 The dashboard has a compact host battery gauge and Tailscale status strip above System activity.
 
-- GET /api/host-status requires a session and returns only battery and Tailscale summaries from read-only local commands; no peer or account data.
+- GET /api/host-status requires a session and returns battery and Tailscale summaries from read-only local commands, plus Claude and Codex quota summaries (see their usage-indicator entries); no peer or account data.
 - Reads use two-second command timeouts and a shared ten-second demand-driven cache. The visible authenticated browser polls ten seconds after completion; hidden, signed-out and unloaded pages pause polling.
 - Tailscale connected requires BackendState=Running and Self.Online=true. Missing CLI, login/approval needs, disconnected and unavailable states are explicit; unknown battery readings do not become zero.
 
 Sources: [host_status.py](host_status.py), [server.py](server.py), [web/host-status.js](web/host-status.js), [web/index.html](web/index.html), [docs/API.md](docs/API.md), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json).
+
+## claude-usage-indicator — Claude plan usage pill from the Claude Code status line
+
+Kind: `project`. Last reviewed: `2026-11-03`.
+
+A pill beside the Auto/Intel/AMD graphics toggle shows Claude plan 5-hour, weekly and Fable weekly usage reported by Claude Code.
+
+- Decision (2026-11-03): Mac Control never reads Claude credentials or contacts Anthropic itself; Claude Code supplies all usage data with its own sign-in.
+- Sources: (1) Claude Code's statusLine runs claude_usage.py after each reply (stdin rate_limits has only five_hour/seven_day/spend_limit, no Fable). (2) While host status is requested, UsageProbe runs the claude CLI's experimental get_usage control request (no prompt, no model call, no saved session) at most every 5 minutes; it adds per-model weekly windows (model_scoped, e.g. Fable) and fresh 5h/7d including claude.ai usage.
+- Both write only usage windows to .runtime/claude-usage.json (0600, atomic, flock); spend/credits/account details are discarded. Merge: reports within one hour of the same resets_at keep the highest usage; a later window replaces an earlier one; a reply without per-model data keeps the stored list.
+- /api/host-status returns claude.state available/not-configured/unavailable, fiveHour/sevenDay (null after resetsAt) and modelWeekly (expired omitted). The UI dims readings older than 30 minutes, hides Fable unless reported, and shows Manila reset times in the tooltip.
+- On mbp15 (2026-11-03): the user configured the statusLine; the claude Team plan provides rate_limits; the usage check was verified working under the launch agent. The statusLine command path must change if the checkout moves.
+
+Sources: [claude_usage.py](claude_usage.py), [host_status.py](host_status.py), [server.py](server.py), [web/host-status.js](web/host-status.js), [web/index.html](web/index.html), [web/compact.css](web/compact.css), [test_claude_usage.py](test_claude_usage.py), [test_web_interactions.py](test_web_interactions.py), [README.md](README.md), [docs/API.md](docs/API.md), [docs/REFERENCE.md](docs/REFERENCE.md), [docs/machines/mbp15.md](docs/machines/mbp15.md), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json).
 
 ## dashboard-interactions — Stable mobile tabs and chart inspection
 
@@ -209,3 +224,31 @@ Encrypted-drive mounting requests passwords only for locked targets and preserve
 - diskutil error -69464 ('restricted by sandbox') is a TCC Removable Volumes denial; the background service cannot show the consent prompt, so Terminal unlocks succeed while the dashboard fails. TCC attributes requests to the launch agent's first executable, so the agent runs the Command Line Tools Python.app binary directly (identifier com.apple.python3), not caffeinate or the /usr/bin/python3 shim, and server.py starts `caffeinate -is -w <pid>` when MAC_CONTROL_STAY_AWAKE=1. On mbp15 that Python.app has Full Disk Access (granted 2026-11-03). Disk-image volumes are not subject to this check, so test images do not reproduce it.
 
 Sources: [drives.py](drives.py), [native/drives.m](native/drives.m), [web/drives.js](web/drives.js), [test_encrypted_drives.py](test_encrypted_drives.py), [test_web_interactions.py](test_web_interactions.py), [docs/API.md](docs/API.md), [service.py](service.py), [server.py](server.py), [docs/machines/mbp15.md](docs/machines/mbp15.md).
+
+## codex-usage-indicator — Codex plan usage beside Claude
+
+Kind: `project`. Last reviewed: `2026-11-03`.
+
+A matching pill beside Claude shows Codex quota percentages used, actual window durations and Manila reset times.
+
+- Host-status cache refresh triggers a shared background codex app-server account/rateLimits/read check at most every five minutes (30-second timeout, 1 MiB output cap, never concurrent). No prompt, thread or model turn is created.
+- Codex manages its own ChatGPT sign-in; Mac Control never reads Codex credentials or sends direct OpenAI HTTP requests. Only the codex bucket primary/secondary quota windows are retained, in memory; raw account, credit and other bucket details are discarded.
+- /api/host-status returns codex.state available/checking/not-configured/unavailable, updatedAt and nullable primary/secondary {usedPercent, resetsAt, windowMinutes}. Failures retain the last good reading with its original timestamp; expired windows become null. Restart clears the cache. UI dims readings older than 30 minutes.
+- CLI discovery supports PATH, Codex/ChatGPT app bundles, ~/.local/bin, /opt/homebrew/bin and /usr/local/bin. On mbp15, the ChatGPT bundled CLI returned 5-hour and weekly limits on 2026-11-03. Only the dashboard needs restarting for Python changes.
+- Claude and Codex stay together in a flex group; quota windows stack at laptop widths and on mobile, with both provider names visible.
+
+Sources: [codex_usage.py](codex_usage.py), [host_status.py](host_status.py), [server.py](server.py), [web/host-status.js](web/host-status.js), [web/index.html](web/index.html), [web/compact.css](web/compact.css), [test_codex_usage.py](test_codex_usage.py), [test_host_status.py](test_host_status.py), [test_web_interactions.py](test_web_interactions.py), [README.md](README.md), [docs/API.md](docs/API.md), [docs/REFERENCE.md](docs/REFERENCE.md), [docs/machines/mbp15.md](docs/machines/mbp15.md), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json).
+
+## tailscale-serve-publication — Private HTTPS publication at /mc
+
+Kind: `operational`. Last reviewed: `2026-11-03`.
+
+On mbp15, Mac Control is published privately at https://mbp15.tail19753.ts.net/mc through persistent Tailscale Serve.
+
+- The /mc Serve mount proxies to the existing 127.0.0.1:8765 dashboard. Existing / (8080), /tmb (8877) and HTTPS 8443 (8876) routes are preserved; Funnel is not enabled.
+- Optional .runtime/tailscale-serve.json (0600) specifies exact lowercase HTTPS ts.net origin and path_prefix; read at startup with a 4096-byte cap. Invalid configuration fails startup.
+- Forwarded requests require a loopback TCP peer, exact configured Host and X-Forwarded-Host, and X-Forwarded-Proto=https. Untrusted forwarding and Funnel-marked requests are rejected; POST Origin must match the configured HTTPS origin.
+- The existing dashboard password and session checks remain required. Serve never grants localhost-only first setup or helper-path access. HTTPS cookies use Secure and the prefix scope (/mc/); direct local/LAN cookies retain Path=/. Serve sign-in failures share the proxy loopback rate-limit bucket.
+- Serve strips the mount; server HTML links/meta and browser fetches preserve the prefix externally. Publish with tailscale serve --bg --https=443 --set-path=/mc http://127.0.0.1:8765; remove only this route with tailscale serve --https=443 --set-path=/mc off. Python/config changes need only a dashboard restart.
+
+Sources: [tailscale_serve.py](tailscale_serve.py), [server.py](server.py), [web/app.js](web/app.js), [web/stats.js](web/stats.js), [web/index.html](web/index.html), [test_tailscale_serve.py](test_tailscale_serve.py), [test_web_interactions.py](test_web_interactions.py), [README.md](README.md), [docs/API.md](docs/API.md), [docs/REFERENCE.md](docs/REFERENCE.md), [docs/machines/mbp15.md](docs/machines/mbp15.md), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json).

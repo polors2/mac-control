@@ -67,6 +67,25 @@ These approvals require your clicks in macOS. They are not silently granted. The
 - **On the host Mac:** <http://localhost:8765>
 - **On another local device:** `http://YOUR_MAC_IP:8765`
 
+**Tailscale HTTPS:** on mbp15, open [Mac Control over Tailscale](https://mbp15.tail19753.ts.net/mc).
+Your device must be on the tailnet; sign in with the existing dashboard password.
+Tailscale Serve routes `/mc` to the existing dashboard on port 8765. The existing
+root and `/tmb` services are preserved. This uses private Serve, with no Funnel.
+
+To configure another host, save `.runtime/tailscale-serve.json` (mode 0600) with
+its exact origin and mount path, for example:
+
+```json
+{"origin":"https://YOUR_MAC.YOUR_TAILNET.ts.net","path_prefix":"/mc"}
+```
+
+Use the actual lowercase hostname in place of the placeholders. Restart only
+the dashboard, then run `tailscale serve --bg --https=443 --set-path=/mc http://127.0.0.1:8765`.
+The HTTPS cookie is scoped to `/mc/` and marked Secure; local/LAN access keeps
+working at its existing address. First-time password setup must still happen
+on the host Mac at localhost. To remove only this route, run
+`tailscale serve --https=443 --set-path=/mc off`. Do not reset the other Serve routes.
+
 The **Network** button shows the host's local addresses. Sign in with the dashboard password you chose. The devices need to be able to reach each other on the LAN; guest Wi-Fi isolation, firewall settings, or browser local-network permissions may affect access.
 
 ## Dashboard layout
@@ -74,6 +93,33 @@ The **Network** button shows the host's local addresses. Sign in with the dashbo
 Live CPU, Intel GPU, AMD GPU, RAM, and network graphs sit above power and energy. The dashboard uses a 16px body size, 14px secondary text and chart labels, larger headings and readings, and controls at least 44px tall. Charts draw at their displayed dimensions so labels remain readable at normal zoom. The dashboard fills the available width, uses content-sized cards, and keeps the desktop panels side by side down to laptop widths. Cards reflow into fewer columns on smaller screens. Main content scrolls below the header without a visible scroll track; wheel, touch, and keyboard scrolling remain available. Desktop shows controls, cooling, and drives together; mobile uses Controls, Inputs, Fans & temps, and USB drives tabs. Keyboard backlight and automatic brightness live inside Built-in Inputs. Hidden/closed pages still stop CPU/GPU/network graph sampling.
 
 **Host status:** a compact strip above System activity shows the Mac’s battery gauge, percentage, AC/battery source and charging state, plus Tailscale connection status. Low battery uses an amber gauge. Readings refresh every ten seconds while visible and signed in. Tailscale uses the installed CLI; missing, disconnected, sign-in/approval and unavailable states are shown explicitly. These are read-only indicators for the host Mac.
+
+**Claude usage:** a pill beside the Auto / Intel / AMD graphics toggle shows the Claude plan's 5-hour, weekly and Fable weekly usage, with amber at 80% and red at 100%. Hover it for reset times (Manila) and when the numbers were last updated. Claude Code supplies all of them: Mac Control never reads Claude credentials or calls Anthropic itself. There are two sources:
+
+- **Usage check (automatic, includes Fable):** while the dashboard is viewed, Mac Control asks the installed Claude Code CLI for its `/usage` data at most every five minutes. Claude Code signs in with its own credentials. No prompt is sent, no model request is made and no session is saved. This needs Claude Code installed and signed in on the host Mac; failures are logged once to `.runtime/server.log`.
+- **Status line (instant, optional):** to also update after every Claude Code reply, add this to `~/.claude/settings.json` on the host Mac (or merge it into an existing `statusLine` command):
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "/usr/bin/python3 /path/to/mac-control/claude_usage.py"
+}
+```
+
+Both sources save only usage percentages and reset times to the private `.runtime/claude-usage.json`; spend, credit and account details are discarded. The status line also prints the summary (`5h 23% · 7d 41% · Fable 3%`) in Claude Code. The usage check includes claude.ai usage; between checks the status line updates the 5-hour and weekly values. Readings older than 30 minutes are dimmed. A window whose reset time has passed shows `—`, and Fable is hidden, until the next update. Usage limits appear for Claude.ai subscription plans (including Team); API-key users see no readings. Until the first update, the pill shows **Set up**.
+
+**Codex usage:** a matching pill beside Claude shows the Codex plan's 5-hour
+and weekly percentages used, with the same amber/red thresholds and Manila
+reset-time tooltip. The labels follow the actual window durations reported by
+Codex. While the dashboard is viewed, a shared background check asks the installed
+Codex CLI for account limits at most every five minutes. Codex must be signed in
+with ChatGPT on the host Mac; no prompt, conversation or model call is made.
+Mac Control does not read Codex credentials. Only quota windows are kept in
+memory, so a restart briefly shows **Checking…**. Missing CLI shows **Set up**;
+a failed initial read shows **Unavailable**. Later failures retain the last
+successful reading, dimmed after 30 minutes; expired windows show `—`. Hover for
+when the reading was updated. CLI discovery supports `PATH`, the Codex/ChatGPT
+app bundles, `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`.
 
 Chart tooltips show exact recorded samples in Manila time, with percentage, transfer-rate, watts or energy units. Missing samples stay gaps. Hover with a mouse, tap on a phone, or focus a chart and use Left/Right, Home/End and Escape. Both overview and expanded charts support inspection, including the daily energy log. Mobile section buttons stay pinned while browsing controls; switching sections preserves their position.
 
