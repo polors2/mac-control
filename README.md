@@ -121,6 +121,8 @@ successful reading, dimmed after 30 minutes; expired windows show `—`. Hover f
 when the reading was updated. CLI discovery supports `PATH`, the Codex/ChatGPT
 app bundles, `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`.
 
+The 5-hour windows show a live `Resets in H:MM:SS` countdown below the percentage, using the reported reset timestamp. It updates locally once per second while visible and signed in, with no extra requests. Missing or expired windows have no timer; at zero the old percentage clears to `—` until fresh usage arrives.
+
 Chart tooltips show exact recorded samples in Manila time, with percentage, transfer-rate, watts or energy units. Missing samples stay gaps. Hover with a mouse, tap on a phone, or focus a chart and use Left/Right, Home/End and Escape. Both overview and expanded charts support inspection, including the daily energy log. Mobile section buttons stay pinned while browsing controls; switching sections preserves their position.
 
 ## Persistent Display Off

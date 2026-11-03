@@ -69,6 +69,13 @@ shows `—` for null 5h/7d windows, and shows the Fable window (or the first
 per-model window) only when one is reported. It dims readings older than 30
 minutes and lists every window with its Manila reset time in the tooltip.
 
+`renderUsageReset()` shows a `Resets in H:MM:SS` countdown for Claude fiveHour
+and Codex windows reporting exactly 300 minutes. A shared one-second browser
+timeout recomputes from resetsAt using the current clock, without extra polling.
+It pauses when hidden, signed out or unloaded; resume fetches fresh host status.
+Missing/expired windows hide the timer; expiry clears the old percentage to `—`
+without assuming a new unused window. Timer spans disable live announcements.
+
 Responsive layout: Claude and Codex share a flex group so they stay together.
 At laptop widths (701–1600px), each pill stacks its windows and hides meters;
 the group can wrap below the graphics toggle. On mobile the windows also stack,

@@ -90,26 +90,32 @@ class WebInteractionTests(unittest.TestCase):
             self.assertEqual(self.evaluate(script + 'JSON.stringify(appPath("/api/stats?viewer=abc"));'),
                              prefix + '/api/stats?viewer=abc')
 
-    def claude_pill(self, data, signed_in=True, now=1_800_000_000, provider="claude"):
+    def claude_pill(self, data, signed_in=True, now=1_800_000_000, provider="claude", elapsed=0):
         five, seven = ("claude-five-hour", "claude-seven-day") if provider == "claude" else ("codex-primary", "codex-secondary")
         source = (self.web / 'host-status.js').read_text().split('const claudeResetClock')[1].split('function scheduleHostStatus')[0]
         script = f'''
           const authenticated={json.dumps(signed_in)};
-          Date.now=()=>{now}*1000;
+          let clock={now}*1000, usageResetTimer, tick;
+          Date.now=()=>clock;
+          const usageResetWindows=new Map(), document={{hidden:false}};
+          const clearTimeout=()=>{{tick=null;}}, setTimeout=fn=>{{tick=fn;return 1;}};
           const element=()=>{{const classes=new Set();return {{hidden:false,textContent:'',title:'',style:{{}},classes,
             classList:{{toggle(name,on){{on ? classes.add(name):classes.delete(name);}}}}}};}};
           const nodes={{'#{provider}-usage':element(),'#{provider}-note':element()}};
           for(const id of ['#{five}','#{seven}','#claude-model-week']) {{
-            const item=element(), strong=element(), meter=element(), label=element();
-            item.querySelector=selector=>selector==='strong' ? strong:selector==='.claude-window-label' ? label:meter;
-            item.strong=strong;item.meter=meter;item.label=label;nodes[id]=item;
+            const item=element(), strong=element(), meter=element(), label=element(), reset=element();
+            item.querySelector=selector=>selector==='strong' ? strong:selector==='.claude-window-label' ? label:selector==='.usage-reset' ? reset:meter;
+            item.strong=strong;item.meter=meter;item.label=label;item.reset=reset;nodes[id]=item;
           }}
           const $=selector=>nodes[selector];
         ''' + 'const claudeResetClock' + source + f'''
           render{provider.title()}Usage({json.dumps(data)});
+          scheduleUsageResetTimers();
+          if({elapsed}) {{clock+={elapsed}*1000;tick?.();}}
           const view=id=>({{hidden:nodes[id].hidden,text:nodes[id].strong.textContent,width:nodes[id].meter.style.width,classes:[...nodes[id].classes].sort()}});
           JSON.stringify({{note:nodes['#{provider}-note'].textContent,noteHidden:nodes['#{provider}-note'].hidden,
             stale:nodes['#{provider}-usage'].classes.has('is-stale'),title:nodes['#{provider}-usage'].title,
+            reset:{{text:nodes['#{five}'].reset.textContent,hidden:nodes['#{five}'].reset.hidden}},resetTicking:tick!==null,
             five:view('#{five}'),seven:view('#{seven}'),fiveLabel:nodes['#{five}'].label.textContent,
             model:{{...view('#claude-model-week'),label:nodes['#claude-model-week'].label.textContent}}}});
         '''
@@ -176,6 +182,31 @@ class WebInteractionTests(unittest.TestCase):
         self.assertEqual(result['fiveLabel'], '15m')
         self.assertEqual(result['seven']['text'], '—')
         self.assertTrue(result['stale'])
+
+    def test_five_hour_reset_counts_down_and_expires_without_inventing_usage(self):
+        now = 1_800_000_000
+        for provider, key in [('claude', 'fiveHour'), ('codex', 'primary')]:
+            data = {provider: {'state': 'available', 'updatedAt': now,
+                              key: {'usedPercent': 82, 'resetsAt': now + 3661, 'windowMinutes': 300}}}
+            with self.subTest(provider=provider):
+                result = self.claude_pill(data, provider=provider)
+                self.assertEqual(result['reset'], {'text': 'Resets in 1:01:01', 'hidden': False})
+                self.assertTrue(result['resetTicking'])
+                result = self.claude_pill(data, provider=provider, elapsed=62)
+                self.assertEqual(result['reset']['text'], 'Resets in 0:59:59')
+                result = self.claude_pill(data, provider=provider, elapsed=3661)
+                self.assertEqual(result['reset'], {'text': '', 'hidden': True})
+                self.assertEqual(result['five']['text'], '—')
+                self.assertFalse(result['resetTicking'])
+                self.assertTrue(self.claude_pill(data, signed_in=False, provider=provider)['reset']['hidden'])
+                data[provider][key]['resetsAt'] = now - 1
+                result = self.claude_pill(data, provider=provider)
+                self.assertTrue(result['reset']['hidden'])
+                self.assertEqual(result['five']['text'], '—')
+                data[provider][key]['resetsAt'] = None
+                self.assertTrue(self.claude_pill(data, provider=provider)['reset']['hidden'])
+        data = {'codex': {'state': 'available', 'primary': {'usedPercent': 10, 'resetsAt': now + 3600, 'windowMinutes': 15}}}
+        self.assertTrue(self.claude_pill(data, provider='codex')['reset']['hidden'])
 
     def test_codex_usage_states_clear_readings_when_signed_out(self):
         for data, signed_in, note in [(None, True, 'Checking…'), ({'codex': {'state': 'checking'}}, True, 'Checking…'),

@@ -607,3 +607,8 @@ body.control-center{background:#edf2ef}
   .control-center .claude-window strong{min-width:3.5ch}
 }
 @media(max-width:700px){.control-center .usage-limits{gap:8px}}
+
+/* Reset countdowns stay under their quota row to keep both providers compact. */
+.control-center .claude-window:has(.usage-reset:not([hidden])){display:grid;grid-template-columns:auto auto auto;column-gap:7px;row-gap:2px}
+.control-center .usage-reset{grid-column:1/-1;justify-self:end;color:#5e6d63;font-size:10px;font-variant-numeric:tabular-nums;line-height:1.2}
+@media(max-width:1600px){.control-center .claude-window:has(.usage-reset:not([hidden])){grid-template-columns:auto auto;column-gap:5px}}

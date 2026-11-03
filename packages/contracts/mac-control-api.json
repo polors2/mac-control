@@ -126,6 +126,23 @@
         "conversation_created": false,
         "persistent_usage_file": false,
         "on_error": "retain_last_successful_reading_with_original_updatedAt"
+      },
+      "browser_reset_countdown": {
+        "windows": [
+          "claude.fiveHour",
+          "codex.primary/secondary where windowMinutes=300"
+        ],
+        "format": "Resets in H:MM:SS",
+        "tick_ms": 1000,
+        "source": "resetsAt minus current browser time",
+        "extra_requests": false,
+        "pause_when": [
+          "page_hidden",
+          "signed_out",
+          "page_unloaded"
+        ],
+        "missing_or_expired": "hide_timer",
+        "on_expiry": "clear_old_percentage_until_fresh_usage"
       }
     },
     "drive_mounting": {
