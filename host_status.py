@@ -1,4 +1,4 @@
-"""Read-only, demand-driven battery and Tailscale summaries for the dashboard."""
+"""Read-only, demand-driven host status and plan usage summaries for the dashboard."""
 import json
 import os
 from pathlib import Path
@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import threading
 import time
+
+from claude_usage import usage_status
 
 
 def battery_status(output):
@@ -38,7 +40,10 @@ def tailscale_status(data):
 
 
 class HostStatus:
-    def __init__(self):
+    def __init__(self, claude_usage_path=None, claude_probe=None, codex_probe=None):
+        self.claude_usage_path = claude_usage_path
+        self.claude_probe = claude_probe
+        self.codex_probe = codex_probe
         self.lock = threading.Lock()
         self.cached = None
         self.cached_at = 0
@@ -67,6 +72,13 @@ class HostStatus:
                     tailscale = {'state': 'unavailable'}
             else:
                 tailscale = {'state': 'not-installed'}
-            self.cached = {'battery': battery, 'tailscale': tailscale}
+            if self.claude_probe is not None:
+                self.claude_probe.poke()
+            if self.codex_probe is not None:
+                self.codex_probe.poke()
+            self.cached = {'battery': battery, 'tailscale': tailscale,
+                           'claude': usage_status(self.claude_usage_path),
+                           'codex': self.codex_probe.snapshot() if self.codex_probe is not None else {
+                               'state': 'not-configured', 'updatedAt': None, 'primary': None, 'secondary': None}}
             self.cached_at = time.monotonic()
             return self.cached

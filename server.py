@@ -21,6 +21,8 @@ from controls import ControlManager
 from metrics import StatsMonitor
 from power import PowerMonitor
 from host_status import HostStatus
+from claude_usage import USAGE_FILE as CLAUDE_USAGE_FILE, UsageProbe
+from codex_usage import UsageProbe as CodexUsageProbe
 from fans import FanController
 from graphics import GraphicsController
 from drives import DriveManager
@@ -40,7 +42,7 @@ AUTH = None
 CONTROLS = None
 STATS = None
 POWER = None
-HOST_STATUS = HostStatus()
+HOST_STATUS = HostStatus(CLAUDE_USAGE_FILE, UsageProbe(CLAUDE_USAGE_FILE), CodexUsageProbe())
 FANS = None
 DRIVES = None
 INPUTS = None

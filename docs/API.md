@@ -1,6 +1,6 @@
 # Mac Control HTTP API
 
-Documentation revision **1.1.1**, reviewed against this checkout on **2026-11-03**.
+Documentation revision **1.3.0**, reviewed against this checkout on **2026-11-03**.
 This revision versions the documentation, not a version negotiated by the server.
 The routes currently use `/api/` without an API version prefix.
 
@@ -80,7 +80,7 @@ rules. Read routes can still refresh caches or sampling leases.
 | `POST /api/setup` | `password`, optional boolean `remember` | Loopback-only first setup; creates a session. 409 if already configured. |
 | `POST /api/session` | `password`, optional boolean `remember` | Creates a session; incorrect password returns 401. |
 | `POST /api/logout` | `{}` | Revokes the current session; `authenticated=false`. |
-| `GET /api/host-status` | None | Host `battery` (`available`, nullable `present`/`percent`, `source`, `state`) and `tailscale.state`; read-only shared ten-second cache. |
+| `GET /api/host-status` | None | Host `battery` (`available`, nullable `present`/`percent`, `source`, `state`), `tailscale.state` `codex` quota windows (`state`, nullable `updatedAt`, `primary`, `secondary`) and `claude` plan usage (`state`, nullable `updatedAt`, `fiveHour`, `sevenDay`, `modelWeekly` list); read-only shared ten-second cache; may start background Claude Code and Codex usage checks. |
 | `GET /api/state` | None | Hardware state, `capabilities`, saved `restoreLevels`, display state, `device`, `graphics`. |
 | `POST /api/control` | `control`, numeric `value` | Controls: `brightness`, `keyboard`, `volume` accept 0–100; `mute`, `keyboardAuto`, `displaySleep` accept numeric 0/1. JSON booleans are rejected for value. Returns hardware state. |
 | `POST /api/toggle` | `control`, boolean `enabled` | `brightness`, `keyboard`, `volume`; Off preserves a restore level, On restores it. Volume Off mutes. Returns hardware state. |
@@ -125,6 +125,41 @@ while visible and signed in. Tailscale is connected only when `BackendState` is
 and disconnected states are distinct; peer, address and account data are omitted.
 Battery percentage is null when unavailable; `present=false` means no battery.
 These indicators describe the host Mac, independently of the browser connection.
+
+`claude` summarizes Claude plan usage reported by Claude Code. Mac Control reads
+only the private `.runtime/claude-usage.json` file, written by `claude_usage.py`
+from two sources: Claude Code's status line after each reply, and a background
+usage check. While host status is being requested, the server asks the local
+Claude Code CLI for its `/usage` data at most every five minutes (30-second
+timeout, never concurrent; the experimental `get_usage` control request with no
+prompt, no model call and no saved session). Mac Control never reads Claude
+credentials or contacts Anthropic itself; Claude Code uses its own sign-in.
+`state` is `available`, `not-configured` (nothing has been written yet) or
+`unavailable` (unreadable or invalid file). `fiveHour` and `sevenDay` are
+`{usedPercent, resetsAt}` (0–100, one decimal; epoch seconds), or null when not
+reported or once `resetsAt` has passed. `modelWeekly` lists per-model weekly
+windows from the usage check, such as `{name: "Fable", usedPercent, resetsAt}`;
+expired entries are omitted. `updatedAt` is the epoch second of the last update.
+Values are as of that update, not live. Concurrent reports are merged: within
+the same window usage never decreases, and a later window replaces an earlier
+one. Spend, credit and account details from Claude Code are discarded.
+
+`codex` summarizes the last successful Codex plan quota read. On host-status
+cache refresh, a shared background check runs `codex app-server --listen stdio://`
+at most every five minutes (30-second timeout, 1 MiB output cap, never concurrent).
+It performs the `initialize` / `initialized` handshake and
+`account/rateLimits/read`; no thread or model turn is created. Codex handles its
+own ChatGPT sign-in; Mac Control does not read credentials or send direct OpenAI
+HTTP requests. Only the `codex` quota bucket is retained, in memory; account,
+credit and other bucket details are discarded. `primary` and `secondary` are
+`{usedPercent, resetsAt, windowMinutes}` or null if absent, invalid or expired.
+Window durations come from Codex rather than an assumed 5-hour/weekly schedule.
+`updatedAt` is the epoch second of the successful check; failures retain the last
+success with its original timestamp. Before any success, `state` is `checking`,
+`not-configured` (CLI missing) or `unavailable` (failed read). Once a reading
+exists it is `available`; expired windows remain null until a fresh check.
+The cache starts empty after a dashboard restart. No persistent usage file is
+written. See the [official app-server protocol](https://learn.chatgpt.com/docs/app-server).
 
 ## Errors
 

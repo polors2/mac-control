@@ -1,7 +1,7 @@
 {
   "document_type": "mac_control_api_and_use_cases",
   "schema_version": 1,
-  "documentation_revision": "1.1.1",
+  "documentation_revision": "1.3.0",
   "last_reviewed": "2026-11-03",
   "human_readable_companion": "docs/API.md",
   "api": {
@@ -61,12 +61,71 @@
       "tailscale_source": "tailscale status --json --peers=false",
       "tailscale_connected_requires": "BackendState=Running and Self.Online=true",
       "peer_and_account_details_returned": false,
+      "claude_usage_source": "claude_usage.py -> .runtime/claude-usage.json, from the Claude Code statusLine relay and a background Claude Code get_usage check",
+      "claude_usage_windows": [
+        "fiveHour",
+        "sevenDay",
+        "modelWeekly"
+      ],
+      "claude_usage_states": [
+        "available",
+        "not-configured",
+        "unavailable"
+      ],
+      "claude_credentials_read": false,
+      "claude_network_requests": false,
+      "claude_expired_windows": "null_after_resetsAt",
+      "claude_concurrent_reports": "same_window_max_usage_later_window_replaces",
       "browser_poll_delay_ms": 10000,
       "pause_when": [
         "page_hidden",
         "signed_out",
         "page_unloaded"
-      ]
+      ],
+      "claude_usage_check": {
+        "trigger": "host_status_cache_refresh",
+        "min_interval_seconds": 300,
+        "timeout_seconds": 30,
+        "concurrent": false,
+        "command": "claude -p --input-format stream-json --output-format stream-json --verbose --no-session-persistence --strict-mcp-config --setting-sources ''",
+        "control_requests": [
+          "initialize",
+          "get_usage(skip_behaviors=true)"
+        ],
+        "user_message_sent": false,
+        "model_request": false
+      },
+      "codex_usage_source": "codex_usage.py -> in-memory last successful codex app-server account/rateLimits/read result",
+      "codex_usage_windows": [
+        "primary",
+        "secondary"
+      ],
+      "codex_usage_states": [
+        "available",
+        "checking",
+        "not-configured",
+        "unavailable"
+      ],
+      "codex_credentials_read": false,
+      "codex_network_requests": "Codex app-server uses its own sign-in; Mac Control makes no direct OpenAI HTTP requests",
+      "codex_expired_windows": "null_after_resetsAt",
+      "codex_usage_check": {
+        "trigger": "host_status_cache_refresh",
+        "min_interval_seconds": 300,
+        "timeout_seconds": 30,
+        "max_output_bytes": 1048576,
+        "concurrent": false,
+        "command": "codex app-server --listen stdio://",
+        "rpc_methods": [
+          "initialize",
+          "initialized",
+          "account/rateLimits/read"
+        ],
+        "model_request": false,
+        "conversation_created": false,
+        "persistent_usage_file": false,
+        "on_error": "retain_last_successful_reading_with_original_updatedAt"
+      }
     },
     "drive_mounting": {
       "password_unlock_only_when_locked": true,

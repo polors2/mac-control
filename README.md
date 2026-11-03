@@ -75,6 +75,33 @@ Live CPU, Intel GPU, AMD GPU, RAM, and network graphs sit above power and energy
 
 **Host status:** a compact strip above System activity shows the Mac’s battery gauge, percentage, AC/battery source and charging state, plus Tailscale connection status. Low battery uses an amber gauge. Readings refresh every ten seconds while visible and signed in. Tailscale uses the installed CLI; missing, disconnected, sign-in/approval and unavailable states are shown explicitly. These are read-only indicators for the host Mac.
 
+**Claude usage:** a pill beside the Auto / Intel / AMD graphics toggle shows the Claude plan's 5-hour, weekly and Fable weekly usage, with amber at 80% and red at 100%. Hover it for reset times (Manila) and when the numbers were last updated. Claude Code supplies all of them: Mac Control never reads Claude credentials or calls Anthropic itself. There are two sources:
+
+- **Usage check (automatic, includes Fable):** while the dashboard is viewed, Mac Control asks the installed Claude Code CLI for its `/usage` data at most every five minutes. Claude Code signs in with its own credentials. No prompt is sent, no model request is made and no session is saved. This needs Claude Code installed and signed in on the host Mac; failures are logged once to `.runtime/server.log`.
+- **Status line (instant, optional):** to also update after every Claude Code reply, add this to `~/.claude/settings.json` on the host Mac (or merge it into an existing `statusLine` command):
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "/usr/bin/python3 /path/to/mac-control/claude_usage.py"
+}
+```
+
+Both sources save only usage percentages and reset times to the private `.runtime/claude-usage.json`; spend, credit and account details are discarded. The status line also prints the summary (`5h 23% · 7d 41% · Fable 3%`) in Claude Code. The usage check includes claude.ai usage; between checks the status line updates the 5-hour and weekly values. Readings older than 30 minutes are dimmed. A window whose reset time has passed shows `—`, and Fable is hidden, until the next update. Usage limits appear for Claude.ai subscription plans (including Team); API-key users see no readings. Until the first update, the pill shows **Set up**.
+
+**Codex usage:** a matching pill beside Claude shows the Codex plan's 5-hour
+and weekly percentages used, with the same amber/red thresholds and Manila
+reset-time tooltip. The labels follow the actual window durations reported by
+Codex. While the dashboard is viewed, a shared background check asks the installed
+Codex CLI for account limits at most every five minutes. Codex must be signed in
+with ChatGPT on the host Mac; no prompt, conversation or model call is made.
+Mac Control does not read Codex credentials. Only quota windows are kept in
+memory, so a restart briefly shows **Checking…**. Missing CLI shows **Set up**;
+a failed initial read shows **Unavailable**. Later failures retain the last
+successful reading, dimmed after 30 minutes; expired windows show `—`. Hover for
+when the reading was updated. CLI discovery supports `PATH`, the Codex/ChatGPT
+app bundles, `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`.
+
 Chart tooltips show exact recorded samples in Manila time, with percentage, transfer-rate, watts or energy units. Missing samples stay gaps. Hover with a mouse, tap on a phone, or focus a chart and use Left/Right, Home/End and Escape. Both overview and expanded charts support inspection, including the daily energy log. Mobile section buttons stay pinned while browsing controls; switching sections preserves their position.
 
 ## Persistent Display Off

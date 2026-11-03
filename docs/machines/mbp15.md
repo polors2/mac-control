@@ -37,6 +37,23 @@ Accessibility approval and external notifier integration may use that path.
 It is an alias to the same state, not a second database or running instance.
 The remaining old source files are retained for recovery and are inactive.
 
+The Claude usage pill reads `.runtime/claude-usage.json`. The dashboard's
+background usage check writes it by running `~/.local/bin/claude` (verified
+under the launch agent on 2026-11-03, including Fable). Claude Code's
+`statusLine` in `~/.claude/settings.json` also writes it after each reply:
+`/usr/bin/python3 /Users/paolo/personal/mac-control/claude_usage.py`. The user
+configured that on 2026-11-03. Neither needs a helper restart. Moving this
+checkout requires updating the status line command path.
+
+The Codex usage pill uses the installed Codex CLI's app-server account-limits
+read, with Codex's own ChatGPT sign-in. On mbp15, the ChatGPT app's bundled CLI
+was verified to return 5-hour and weekly quota windows on 2026-11-03. The
+background launch agent can find it at
+`/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex`
+even without a shell PATH. Limits are cached only in memory, checked at most
+every five minutes while the dashboard is viewed. Python changes need only a
+dashboard restart; no privileged helper restart or status-line setup is needed.
+
 The fan and input daemons remain under `/Library/PrivilegedHelperTools` and
 `/Library/LaunchDaemons`. They were not restarted during migration. The
 separate DevBox Notifier service is outside this repository; its existing

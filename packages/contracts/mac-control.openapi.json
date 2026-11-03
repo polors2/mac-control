@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Mac Control HTTP API",
-    "version": "1.1.1",
+    "version": "1.3.0",
     "description": "Documentation revision reviewed 2026-11-03 against this repository. All current /api/ GET/POST operations; not a negotiated runtime API version. The separate openapi.json documents Notifier /v1/ routes. Native helper response shapes are intentionally extensible."
   },
   "servers": [
@@ -1400,8 +1400,8 @@
         "tags": [
           "Telemetry"
         ],
-        "summary": "Read host battery and Tailscale status",
-        "description": "Read-only local commands, two-second timeout each, shared ten-second demand-driven cache. Unavailable sensors return HTTP 200 with explicit unknown states; no peers, addresses or account data are returned.",
+        "summary": "Read host battery, Tailscale and Claude plan usage status",
+        "description": "Read-only local commands, two-second timeout each, shared ten-second demand-driven cache. Unavailable sensors return HTTP 200 with explicit unknown states; no peers, addresses or account data are returned. Claude usage comes only from the private file written by claude_usage.py from the Claude Code status line and from a background Claude Code usage check that a cache refresh may start (at most every five minutes, no prompt or model call); Mac Control reads no credentials and does not contact Anthropic itself. Codex usage is read through a local codex app-server account/rateLimits/read request at most every five minutes (30-second timeout, never concurrent), with Codex managing its own sign-in. No conversation or model turn is started; only codex quota windows are retained in memory.",
         "responses": {
           "200": {
             "description": "Successful request; inspect payload availability, capability and error fields.",
@@ -2263,7 +2263,9 @@
         "type": "object",
         "required": [
           "battery",
-          "tailscale"
+          "tailscale",
+          "claude",
+          "codex"
         ],
         "properties": {
           "battery": {
@@ -2329,6 +2331,198 @@
                   "not-installed",
                   "unavailable"
                 ]
+              }
+            }
+          },
+          "claude": {
+            "type": "object",
+            "required": [
+              "state",
+              "updatedAt",
+              "fiveHour",
+              "sevenDay",
+              "modelWeekly"
+            ],
+            "description": "Claude plan usage as of the last Claude Code report (status line or usage check), not a live reading. Concurrent reports are merged so usage within a window never decreases.",
+            "properties": {
+              "state": {
+                "enum": [
+                  "available",
+                  "not-configured",
+                  "unavailable"
+                ],
+                "description": "not-configured: nothing has been written yet; unavailable: the usage file is unreadable or invalid."
+              },
+              "updatedAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Epoch seconds of the last update."
+              },
+              "fiveHour": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "usedPercent",
+                  "resetsAt"
+                ],
+                "properties": {
+                  "usedPercent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Percent of the window used, one decimal place."
+                  },
+                  "resetsAt": {
+                    "type": "integer",
+                    "description": "Epoch seconds when the window resets."
+                  }
+                },
+                "description": "Null when not reported or once resetsAt has passed."
+              },
+              "sevenDay": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "usedPercent",
+                  "resetsAt"
+                ],
+                "properties": {
+                  "usedPercent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Percent of the window used, one decimal place."
+                  },
+                  "resetsAt": {
+                    "type": "integer",
+                    "description": "Epoch seconds when the window resets."
+                  }
+                },
+                "description": "Null when not reported or once resetsAt has passed."
+              },
+              "modelWeekly": {
+                "type": "array",
+                "maxItems": 4,
+                "description": "Per-model weekly windows from the Claude Code usage check (for example Fable). Expired entries are omitted.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "usedPercent",
+                    "resetsAt"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40,
+                      "description": "Server-supplied model label, e.g. Fable."
+                    },
+                    "usedPercent": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "resetsAt": {
+                      "type": "integer",
+                      "description": "Epoch seconds when the window resets."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "codex": {
+            "type": "object",
+            "required": [
+              "state",
+              "updatedAt",
+              "primary",
+              "secondary"
+            ],
+            "description": "Codex plan quota windows from a background local app-server account/rateLimits/read request. Latest successful reading retained in memory on failure; no credentials or account details returned.",
+            "properties": {
+              "state": {
+                "enum": [
+                  "available",
+                  "checking",
+                  "not-configured",
+                  "unavailable"
+                ],
+                "description": "checking before the first check; not-configured if the Codex CLI is absent; unavailable if no successful reading exists."
+              },
+              "updatedAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Epoch seconds of the last successful update."
+              },
+              "primary": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "usedPercent",
+                  "resetsAt",
+                  "windowMinutes"
+                ],
+                "properties": {
+                  "usedPercent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Percent of the window used, one decimal place."
+                  },
+                  "resetsAt": {
+                    "type": "integer",
+                    "description": "Epoch seconds when the window resets."
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 525600,
+                    "description": "Reported quota window duration in minutes."
+                  }
+                },
+                "description": "Null when not reported or once resetsAt has passed."
+              },
+              "secondary": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "usedPercent",
+                  "resetsAt",
+                  "windowMinutes"
+                ],
+                "properties": {
+                  "usedPercent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Percent of the window used, one decimal place."
+                  },
+                  "resetsAt": {
+                    "type": "integer",
+                    "description": "Epoch seconds when the window resets."
+                  },
+                  "windowMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 525600,
+                    "description": "Reported quota window duration in minutes."
+                  }
+                },
+                "description": "Null when not reported or once resetsAt has passed."
               }
             }
           }
