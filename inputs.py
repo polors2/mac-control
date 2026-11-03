@@ -12,7 +12,7 @@ class InputController:
     def __init__(self, socket_path=SOCKET_PATH):
         self.socket_path = str(socket_path)
         self.lock = threading.Lock()
-        self.last_check = 0
+        self.last_check = float("-inf")  # monotonic() can start near 0; always query on first status()
         self.cached_status = self.unavailable()
 
     @staticmethod
