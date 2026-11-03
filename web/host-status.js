@@ -1,6 +1,8 @@
 'use strict';
 
 let hostStatusTimer, hostStatusRequest=false, hostStatusGeneration=0;
+let usageResetTimer;
+const usageResetWindows=new Map();
 
 function renderHostStatus(data) {
   const battery=data?.battery, known=battery?.available && battery.present && Number.isFinite(battery.percent);
@@ -17,6 +19,7 @@ function renderHostStatus(data) {
   $('#tailscale-status').classList.toggle('is-connected',authenticated && data?.tailscale?.state==='connected');
   renderClaudeUsage(data);
   renderCodexUsage(data);
+  scheduleUsageResetTimers();
 }
 
 const claudeResetClock=new Intl.DateTimeFormat([], {timeZone:'Asia/Manila',weekday:'short',hour:'numeric',minute:'2-digit'});
@@ -34,12 +37,33 @@ function showClaudeWindow(item,used,visible) {
   item.classList.toggle('is-high',used!==null && used>=80 && used<100);
   item.classList.toggle('is-full',used===100);
 }
+function renderUsageReset(item,resetsAt) {
+  const timer=item.querySelector('.usage-reset');
+  const remaining=Number.isFinite(resetsAt) ? Math.ceil(resetsAt-Date.now()/1000):0;
+  timer.hidden=remaining<=0;
+  timer.textContent=remaining>0 ? `Resets in ${Math.floor(remaining/3600)}:${String(Math.floor(remaining%3600/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`:'';
+  if(remaining>0) usageResetWindows.set(item,resetsAt);
+  else usageResetWindows.delete(item);
+}
+function scheduleUsageResetTimers() {
+  clearTimeout(usageResetTimer);
+  if(!authenticated || document.hidden || !usageResetWindows.size) return;
+  usageResetTimer=setTimeout(()=>{
+    for(const [item,resetsAt] of usageResetWindows) {
+      renderUsageReset(item,resetsAt);
+      // A passed reset does not prove the next window is unused.
+      if(resetsAt<=Date.now()/1000) showClaudeWindow(item,null,true);
+    }
+    scheduleUsageResetTimers();
+  },1000);
+}
 function renderClaudeUsage(data) {
   const claude=data?.claude, available=authenticated && claude?.state==='available', details=[];
   const reset=usage=>`resets ${claudeResetClock.format(new Date(usage.resetsAt*1000))} Manila`;
   for(const [selector,usage,name] of [['#claude-five-hour',claude?.fiveHour,'5-hour'],['#claude-seven-day',claude?.sevenDay,'Weekly']]) {
-    const used=available ? claudePercent(usage):null;
+    const used=available && usage?.resetsAt>Date.now()/1000 ? claudePercent(usage):null;
     showClaudeWindow($(selector),used,available);
+    if(selector==='#claude-five-hour') renderUsageReset($(selector),used!==null ? usage.resetsAt:null);
     details.push(used===null ? `${name}: no active window reported`:`${name}: ${used}% used, ${reset(usage)}`);
   }
   // Per-model weekly windows (Fable) come from the dashboard's periodic Claude Code usage check.
@@ -65,6 +89,7 @@ function renderCodexUsage(data) {
     const usage=codex?.[key], item=$(`#codex-${key}`), label=codexWindowLabel(usage?.windowMinutes,fallback);
     const used=available && usage?.resetsAt>Date.now()/1000 ? claudePercent(usage):null;
     showClaudeWindow(item,used,available);
+    renderUsageReset(item,used!==null && usage.windowMinutes===300 ? usage.resetsAt:null);
     item.querySelector('.claude-window-label').textContent=label;
     details.push(used===null ? `${label}: no active window reported`:`${label}: ${used}% used, resets ${claudeResetClock.format(new Date(usage.resetsAt*1000))} Manila`);
   }
@@ -91,7 +116,7 @@ async function refreshHostStatus() {
   } finally {hostStatusRequest=false;scheduleHostStatus();}
 }
 function pauseHostStatus() {
-  clearTimeout(hostStatusTimer);hostStatusGeneration++;
+  clearTimeout(hostStatusTimer);clearTimeout(usageResetTimer);hostStatusGeneration++;
   renderHostStatus(null);
 }
 document.addEventListener('dashboard:resume',()=>scheduleHostStatus(0));

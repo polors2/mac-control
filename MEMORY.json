@@ -160,7 +160,8 @@
         "Sources: (1) Claude Code's statusLine runs claude_usage.py after each reply (stdin rate_limits has only five_hour/seven_day/spend_limit, no Fable). (2) While host status is requested, UsageProbe runs the claude CLI's experimental get_usage control request (no prompt, no model call, no saved session) at most every 5 minutes; it adds per-model weekly windows (model_scoped, e.g. Fable) and fresh 5h/7d including claude.ai usage.",
         "Both write only usage windows to .runtime/claude-usage.json (0600, atomic, flock); spend/credits/account details are discarded. Merge: reports within one hour of the same resets_at keep the highest usage; a later window replaces an earlier one; a reply without per-model data keeps the stored list.",
         "/api/host-status returns claude.state available/not-configured/unavailable, fiveHour/sevenDay (null after resetsAt) and modelWeekly (expired omitted). The UI dims readings older than 30 minutes, hides Fable unless reported, and shows Manila reset times in the tooltip.",
-        "On mbp15 (2026-11-03): the user configured the statusLine; the claude Team plan provides rate_limits; the usage check was verified working under the launch agent. The statusLine command path must change if the checkout moves."
+        "On mbp15 (2026-11-03): the user configured the statusLine; the claude Team plan provides rate_limits; the usage check was verified working under the launch agent. The statusLine command path must change if the checkout moves.",
+        "The 5-hour window shows a local Resets in H:MM:SS countdown from resetsAt, refreshed each second while visible and signed in without extra requests. Missing/expired windows hide the timer; at zero the old percentage clears to — until fresh usage arrives."
       ],
       "sources": [
         "claude_usage.py",
@@ -234,7 +235,8 @@
         "Codex manages its own ChatGPT sign-in; Mac Control never reads Codex credentials or sends direct OpenAI HTTP requests. Only the codex bucket primary/secondary quota windows are retained, in memory; raw account, credit and other bucket details are discarded.",
         "/api/host-status returns codex.state available/checking/not-configured/unavailable, updatedAt and nullable primary/secondary {usedPercent, resetsAt, windowMinutes}. Failures retain the last good reading with its original timestamp; expired windows become null. Restart clears the cache. UI dims readings older than 30 minutes.",
         "CLI discovery supports PATH, Codex/ChatGPT app bundles, ~/.local/bin, /opt/homebrew/bin and /usr/local/bin. On mbp15, the ChatGPT bundled CLI returned 5-hour and weekly limits on 2026-11-03. Only the dashboard needs restarting for Python changes.",
-        "Claude and Codex stay together in a flex group; quota windows stack at laptop widths and on mobile, with both provider names visible."
+        "Claude and Codex stay together in a flex group; quota windows stack at laptop widths and on mobile, with both provider names visible.",
+        "Reported 300-minute windows show a local Resets in H:MM:SS countdown from resetsAt, refreshed each second while visible and signed in without extra requests. Missing/expired windows hide the timer; at zero the old percentage clears to — until fresh usage arrives."
       ],
       "sources": [
         "codex_usage.py",
