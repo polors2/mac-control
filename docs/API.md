@@ -1,6 +1,6 @@
 # Mac Control HTTP API
 
-Documentation revision **1.1.0**, reviewed against this checkout on **2026-11-02**.
+Documentation revision **1.1.1**, reviewed against this checkout on **2026-11-03**.
 This revision versions the documentation, not a version negotiated by the server.
 The routes currently use `/api/` without an API version prefix.
 
@@ -97,6 +97,12 @@ rules. Read routes can still refresh caches or sampling leases.
 | `GET /api/power` | Optional query `hours`: `1` (default), `12`, `24` | Current watts, selected history, today's Wh/coverage/history, daily totals and timezone. Invalid windows return 400. |
 | `GET /api/connection` | None | Name, hostname, LAN `urls`, `localUrl`, port, `local`, fan installer path; `helperPath` only over loopback. Does not include raw `addresses`. |
 | `GET /api/file-activity` | None | First integration: selected Notifier snapshot, or HTTP 200 `available=false` fallback. See below. |
+
+For drive mounting, `requiresPassword=true` indicates that the target remains
+locked. Supplying a password for an already-unlocked volume uses a normal mount
+operation; it does not re-run password unlock. Mount failures retain their actual
+mount/permission message. Unlock failures distinguish password, permission and
+general failures using fixed messages; raw tool diagnostics are not returned.
 
 Hardware/helper payloads vary by capabilities and installed helper versions. The
 OpenAPI intentionally allows additional fields rather than pretending to freeze

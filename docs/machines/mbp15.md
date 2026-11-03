@@ -4,6 +4,14 @@ Mac Control runs from `/Users/paolo/personal/mac-control` using the user launch
 agent `~/Library/LaunchAgents/local.maccontrol.server.plist` (label
 `local.maccontrol.server`). It starts at user login and recovers after a crash.
 
+The agent launches the Command Line Tools `Python.app` binary directly (not
+`caffeinate` or the `/usr/bin/python3` shim) so macOS privacy checks are
+attributed to `com.apple.python3`; `server.py` holds its own
+`caffeinate -is -w <pid>` sleep assertion. That Python.app has Full Disk Access,
+which encrypted USB unlock (`diskutil apfs unlockVolume`) needs for Removable
+Volumes. Re-run `python3 service.py update --in-place` after changing the launch
+configuration.
+
 From the checkout:
 
 ```sh

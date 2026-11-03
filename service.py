@@ -99,17 +99,26 @@ def stop():
     print('Mac Control stopped. The background service will start again at the next login.')
 
 
+def python_app():
+    """Return the Python.app executable behind the running interpreter, for TCC attribution."""
+    app = Path(sys.base_prefix) / 'Resources' / 'Python.app' / 'Contents' / 'MacOS' / 'Python'
+    return str(app) if app.exists() else sys.executable
+
+
 def agent_config(root):
     root = Path(root).resolve()
     return {
         'Label': LABEL,
-        'ProgramArguments': ['/usr/bin/caffeinate', '-is', '/usr/bin/python3', str(root / 'server.py')],
+        # launchd starts the real Python.app binary so macOS privacy (TCC) attributes requests,
+        # such as Removable Volumes for drive unlock, to Python rather than caffeinate or the
+        # /usr/bin/python3 shim. server.py holds its own caffeinate assertion (MAC_CONTROL_STAY_AWAKE).
+        'ProgramArguments': [python_app(), str(root / 'server.py')],
         'WorkingDirectory': str(root),
         'RunAtLoad': True,
         'KeepAlive': True,
         'ThrottleInterval': 3,
         'ProcessType': 'Background',
-        'EnvironmentVariables': {'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONUNBUFFERED': '1'},
+        'EnvironmentVariables': {'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONUNBUFFERED': '1', 'MAC_CONTROL_STAY_AWAKE': '1'},
         'StandardOutPath': str(root / '.runtime' / 'server.log'),
         'StandardErrorPath': str(root / '.runtime' / 'server.log'),
         'Umask': 0o077,

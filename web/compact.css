@@ -564,3 +564,24 @@ body.control-center{background:#edf2ef}
 .control-center .tailscale-indicator{width:6px;height:6px;border-radius:50%;background:#89958d;flex-shrink:0}
 .control-center .is-connected .tailscale-indicator{background:#4d7b45;box-shadow:0 0 0 3px #4d7b4512}
 @media(max-width:700px){.control-center .host-status-strip{gap:8px 20px;padding:0}.control-center .host-status-item{gap:7px}.control-center .host-status-detail{font-size:13px}}
+
+@media(max-width:700px){
+  .control-center main{overflow-anchor:none}
+  .control-center .panel-tabs{position:sticky;top:0;z-index:4;box-shadow:0 4px 0 4px #edf2ef}
+  .control-center .dashboard-panels{flex:0 0 auto;min-height:var(--panel-min-height,65svh)}
+  .control-center .dashboard-pane{height:auto;overflow:visible;overscroll-behavior:auto}
+}
+
+.control-center .inspectable-chart{cursor:crosshair;touch-action:pan-y}
+.control-center .inspectable-chart:focus-visible{outline:2px solid #50775b;outline-offset:3px;border-radius:4px}
+.chart-tooltip{position:fixed;z-index:1000;pointer-events:none;max-width:calc(100vw - 16px);padding:10px 12px;border:1px solid #c7d2c8;border-radius:10px;background:#fcfdf7;color:#314e3b;box-shadow:0 4px 18px #24382c25;font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif}
+.chart-tooltip[hidden]{display:none!important}
+.chart-tooltip-time{font-size:12px;color:#526358;margin-bottom:4px}
+.chart-tooltip>div:not(:first-child){display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+.chart-tooltip strong{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chart-crosshair{pointer-events:none}
+.control-center .stat-expand{inset:0 0 auto auto;width:44px;height:44px;border-radius:12px;align-items:center;justify-content:center}
+.control-center .stat-heading{padding-right:30px}
+.control-center .power-grid .power-card-heading{padding-right:32px}
+.control-center .power-section .power-current{padding-right:44px}
+.control-center .power-section .power-current>.stat-expand{top:50%;transform:translateY(-50%)}

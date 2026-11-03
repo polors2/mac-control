@@ -1,8 +1,8 @@
 {
   "document_type": "mac_control_api_and_use_cases",
   "schema_version": 1,
-  "documentation_revision": "1.1.0",
-  "last_reviewed": "2026-11-02",
+  "documentation_revision": "1.1.1",
+  "last_reviewed": "2026-11-03",
   "human_readable_companion": "docs/API.md",
   "api": {
     "service": "Mac Control",
@@ -67,6 +67,13 @@
         "signed_out",
         "page_unloaded"
       ]
+    },
+    "drive_mounting": {
+      "password_unlock_only_when_locked": true,
+      "unlocked_targets_use_normal_mount": true,
+      "requiresPassword_means_target_still_locked": true,
+      "raw_unlock_diagnostics_returned": false,
+      "password_storage": false
     }
   },
   "use_cases": [
