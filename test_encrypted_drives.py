@@ -43,6 +43,30 @@ class EncryptedDriveTests(unittest.TestCase):
         self.assertNotIn('selectedMounted',json.loads(self.path.read_text())[UUID])
         self.assertNotIn('wrong-fixture',json.dumps(result))
 
+    def test_already_unlocked_drive_mounts_without_sending_password_to_native(self):
+        self.state['drives'][0].update(locked=False,state='unmounted')
+        def native(*args,password=None):
+            self.calls.append((args,password))
+            if args[0]=='mount':self.state['drives'][0].update(mounted=True,state='mounted')
+            return copy.deepcopy(self.state)
+        self.manager.runner=native
+        result=self.manager.set_mounted(UUID,True,password=SECRET)
+        self.assertTrue(result['drives'][0]['mounted'])
+        self.assertIn((('mount',UUID),None),self.calls)
+        self.assertFalse(any(args[0]=='unlock' or password is not None for args,password in self.calls))
+
+    def test_already_unlocked_mount_failure_keeps_the_real_error(self):
+        self.state['drives'][0].update(locked=False,state='unmounted')
+        def native(*args,password=None):
+            result=copy.deepcopy(self.state)
+            if args[0]=='mount':result['error']='macOS denied permission to mount this drive.'
+            self.assertIsNone(password)
+            return result
+        self.manager.runner=native
+        result=self.manager.set_mounted(UUID,True,password=SECRET)
+        self.assertEqual(result['error'],'macOS denied permission to mount this drive.')
+        self.assertNotIn('requiresPassword',result)
+
     def test_bad_password_payloads_rejected_before_native_commands(self):
         for password in ('',True,12,[], 'a\nb','a\rb','a\0b','å'*513):
             with self.subTest(password_type=type(password).__name__):

@@ -12,7 +12,7 @@ I wanted to keep my Mac offsite as a dev box keeping MacOS light and managing on
 - **Built-in keyboard and trackpad:** separate input switches. External keyboards, mice, and remote input remain available. Both internal inputs start **On** after a Mac reboot or input-helper restart.
 - **Fans and temperatures:** prominent CPU, Intel GPU, and AMD GPU readings with four cooling modes.
 - **USB storage:** connected, formatted external USB drives appear dynamically. Each has a Mounted/Unmounted button; disconnected drives remain identified. Detection refreshes about every ten seconds while the page is visible.
-- **Live graphs:** CPU utilization, separate Intel/AMD GPU activity, and upload/download rates with two minutes of history. Click or tap a block for a larger live chart with current, average, and peak readings.
+- **Live graphs:** CPU utilization, separate Intel/AMD GPU activity, and upload/download rates with two minutes of history. Hover or tap a chart to inspect its sample time and value. Use the expand icon for a larger live chart with current, average, and peak readings.
 - **Persistent background service:** starts at user login, recovers after a crash, and continues when the browser, Terminal, or VNC disconnects.
 - **Local password:** choose your own password on installation; Remember this device keeps a session for 30 days. There is no default password.
 
@@ -50,11 +50,13 @@ The installer opens these settings when needed. Enable the named app, return to 
 | --- | --- | --- |
 | Input Monitoring | **Mac Control Inputs.app** | Disable/re-enable the built-in keyboard and trackpad |
 | Accessibility | **Mac Control Media.app** | Send play/pause and previous/next media keys |
+| Full Disk Access (or Files and Folders > Removable Volumes) | **Python** (Command Line Tools `Python.app`) | Unlock encrypted USB drives from the dashboard |
 
 If an app is missing from the list, use **+**, then **⌘⇧G**, and select it at the path printed by the installer:
 
 ```text
 /Library/PrivilegedHelperTools/Mac Control Inputs.app
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app
 ~/Library/Application Support/Mac Control/.runtime/Mac Control Media.app
 ```
 
@@ -72,6 +74,8 @@ The **Network** button shows the host's local addresses. Sign in with the dashbo
 Live CPU, Intel GPU, AMD GPU, RAM, and network graphs sit above power and energy. The dashboard uses a 16px body size, 14px secondary text and chart labels, larger headings and readings, and controls at least 44px tall. Charts draw at their displayed dimensions so labels remain readable at normal zoom. The dashboard fills the available width, uses content-sized cards, and keeps the desktop panels side by side down to laptop widths. Cards reflow into fewer columns on smaller screens. Main content scrolls below the header without a visible scroll track; wheel, touch, and keyboard scrolling remain available. Desktop shows controls, cooling, and drives together; mobile uses Controls, Inputs, Fans & temps, and USB drives tabs. Keyboard backlight and automatic brightness live inside Built-in Inputs. Hidden/closed pages still stop CPU/GPU/network graph sampling.
 
 **Host status:** a compact strip above System activity shows the Mac’s battery gauge, percentage, AC/battery source and charging state, plus Tailscale connection status. Low battery uses an amber gauge. Readings refresh every ten seconds while visible and signed in. Tailscale uses the installed CLI; missing, disconnected, sign-in/approval and unavailable states are shown explicitly. These are read-only indicators for the host Mac.
+
+Chart tooltips show exact recorded samples in Manila time, with percentage, transfer-rate, watts or energy units. Missing samples stay gaps. Hover with a mouse, tap on a phone, or focus a chart and use Left/Right, Home/End and Escape. Both overview and expanded charts support inspection, including the daily energy log. Mobile section buttons stay pinned while browsing controls; switching sections preserves their position.
 
 ## Persistent Display Off
 
@@ -111,6 +115,8 @@ Auto and Max hide the editable fan fields. With fan helper version 4, Target coo
 ## USB drive behavior
 
 Locked **encrypted APFS** volumes show **Unlock**. Enter the volume password in the dashboard prompt; a wrong password keeps the prompt open with a retry message. The password goes through stdin to macOS diskutil, never command-line arguments, settings, or logs, and the form clears it after submission or cancellation. Saved mount choices do not save encryption passwords: a drive that locks after reboot/reconnect needs its password again. Other encrypted formats must be unlocked in Disk Utility first.
+
+Unlocking needs the dashboard's Python to have Full Disk Access or Removable Volumes access (see [macOS permissions](#macos-permissions)). The background service cannot show the macOS consent prompt, so without it `diskutil` fails with error -69464 ("restricted by sandbox") and the prompt reports that privacy settings blocked the unlock, even though the same password works in Terminal. The launch agent therefore runs `Python.app` directly, rather than through `caffeinate` or the `/usr/bin/python3` shim, so that macOS checks the grant against Python; the server starts its own `caffeinate -is -w <pid>` to keep the Mac awake. After changing the launch configuration, run `python3 service.py update --in-place`. Failed unlocks log diskutil's message (never the password) to `.runtime/server.log`.
 
 
 The list is discovered from macOS Disk Arbitration and I/O Registry metadata. Drive names and IDs are not hardcoded; volume UUIDs identify drives even if macOS changes their disk numbers. Only currently connected user drives are shown, including connected drives that are unmounted. Disconnected history and EFI system partitions do not become dashboard cards.
@@ -193,6 +199,8 @@ The dashboard uses **HTTP for a trusted intranet**. Do not expose or port-forwar
 ```sh
 python3 server.py --host 127.0.0.1
 ```
+
+Encrypted-drive mounting distinguishes an actual locked volume from an unlocked volume that could not mount. The latter retries Mount without asking for the password again; permission and mount errors are kept separate from authentication failures. An Unlock action always requests mounting, including drives with a mix of mounted and locked volumes. Passwords are still used once and never saved.
 
 ## API documentation
 

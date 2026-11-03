@@ -63,6 +63,9 @@ function powerChart(id, points, begin, end, energy=false) {
   flush();
   if(!values.length) html+=`<text x="${width/2}" y="${(top+baseline)/2}" text-anchor="middle" fill="#526358" font-size="14">Waiting for readings</text>`;
   chart.innerHTML=html;
+  inspectChart(chart,{points,start:begin,end,left:8,right,top,bottom:baseline,width,x,y,
+    maxDistance:energy ? 90:Math.max(15,powerHours*3600/600*1.5),
+    series:[{key:'value',name:energy ? 'Energy recorded':'Power draw',color,format:energy ? powerEnergy:value=>`${value.toFixed(1)} W`}]});
   chart.setAttribute('aria-label',energy ? `Cumulative recorded energy since midnight Manila: ${powerEnergy(powerData?.today?.energyWh)}. Gaps indicate missing readings.`:`System power over the last ${powerHours} ${powerHours===1 ? 'hour':'hours'}. Current draw: ${finite(powerData?.watts) ? powerData.watts.toFixed(1)+' watts':'unavailable'}. Gaps indicate missing readings.`);
 }
 
@@ -148,6 +151,11 @@ function renderDailyEnergyChart(data) {
   }
   if(recorded.length<2) html+=`<text x="${(left+right)/2}" y="${top+(baseline-top)/2}" text-anchor="middle" fill="#526358" font-size="14">${recorded.length ? 'More days will form a line.':'No daily readings yet.'}</text>`;
   chart.innerHTML=html;
+  const dated=points.map(point=>({...point,time:Date.parse(point.day+'T00:00:00+08:00')/1000}));
+  inspectChart(chart,{points:dated,start:dated[0].time,end:dated.at(-1).time,left,right,top,bottom:baseline,width,
+    x:time=>left+(time-dated[0].time)/(dated.at(-1).time-dated[0].time)*(right-left),y,
+    formatTime:(time,point)=>point ? `${point.day}${point.day===today ? ' · in progress':''} · Manila`:chartSampleClock(time),
+    series:[{key:'value',name:'Daily energy',color:'#50775b',format:powerEnergy}]});
   chart.setAttribute('aria-label',`Daily energy line chart for the last 90 days. ${recorded.length} ${recorded.length===1 ? 'day':'days'} recorded, ${powerEnergy(total)} total. Missing days are gaps. Today is in progress.`);
   $('#power-daily-note').textContent=recorded.length===1 ? `Only ${recorded[0].day} has data so far. Earlier days are unrecorded, not zero.`:'Each point is one day of recorded energy. Missing days are gaps; today is shown with an open point.';
 }

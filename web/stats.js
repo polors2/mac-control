@@ -47,6 +47,9 @@ function historyChart(id, history, series, maximum=100, isNetwork=false) {
     if (last && finite(last[line.key])) content+=`<circle cx="${x(last.time).toFixed(2)}" cy="${y(last[line.key]).toFixed(2)}" r="2.5" fill="${line.color}" stroke="#fcfdf7" stroke-width="1.2"/>`;
   }
   chart.innerHTML=content;
+  const names={cpu:'CPU',intelGpu:'Intel GPU',amdGpu:'AMD GPU',ram:'RAM used',download:'↓ Download',upload:'↑ Upload'};
+  inspectChart(chart,{points:history.filter(point=>point.time>=begin),start:begin,end,left:4,right,top,bottom:baseline,width,x,y,maxDistance:3,
+    series:series.map(line=>({...line,name:line.name || names[line.key],format:isNetwork ? rate:value=>`${value.toFixed(1)}%`}))});
 }
 
 function renderStats(data) {

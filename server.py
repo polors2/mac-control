@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import ipaddress
 import json
 import math
+import os
 from pathlib import Path
 import re
 import socket
@@ -248,6 +249,7 @@ class Handler(BaseHTTPRequestHandler):
                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
                  '/compact.css': ('compact.css', 'text/css; charset=utf-8'),
                  '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+                 '/chart-inspector.js': ('chart-inspector.js', 'text/javascript; charset=utf-8'),
                  '/stats.js': ('stats.js', 'text/javascript; charset=utf-8'),
                  '/power.js': ('power.js', 'text/javascript; charset=utf-8'),
                  '/host-status.js': ('host-status.js', 'text/javascript; charset=utf-8'),
@@ -413,6 +415,10 @@ def main():
     POWER = PowerMonitor(RUNTIME / 'metrics', RUNTIME / 'power.sqlite3')
     server.daemon_threads = True
     server.timeout = 5
+    if os.environ.get('MAC_CONTROL_STAY_AWAKE') == '1':
+        # Prevent idle and system sleep for exactly this server's lifetime (-w exits with our PID).
+        subprocess.Popen(['/usr/bin/caffeinate', '-is', '-w', str(os.getpid())], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     restoration = StartupRestore({'controls': CONTROLS.restore, 'fans': FANS.restore, 'USB drives': DRIVES.restore})
     restoration.start()
     print(f"Mac Control is ready: {INFO['localUrl']}", flush=True)

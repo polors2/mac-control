@@ -5,7 +5,7 @@ Provider-neutral project memory for humans and AI agents. Read this file and
 Both files describe the same durable knowledge. They are plain UTF-8 Markdown
 and JSON, with no provider-specific tooling or dependencies.
 
-Format version: `1`. Last reviewed: `2026-11-02`.
+Format version: `1`. Last reviewed: `2026-11-03`.
 
 ## How to maintain this memory
 
@@ -67,14 +67,14 @@ Sources: [README.md](README.md), [docs/REFERENCE.md](docs/REFERENCE.md),
 
 ## api-interface — Mac Control HTTP interface
 
-Kind: `project`. Last reviewed: `2026-11-02`.
+Kind: `project`. Last reviewed: `2026-11-03`.
 
 Mac Control's full HTTP API and the first integration use case are documented in
 docs/API.md, packages/contracts/mac-control.openapi.json and
 packages/contracts/mac-control-api.json.
 
 - The current implementation has 21 GET/POST operations under /api/. The API
-  documentation revision is 1.1.0; the runtime has no negotiated API version or
+  documentation revision is 1.1.1; the runtime has no negotiated API version or
   live OpenAPI route. Hardware response schemas remain extensible.
 - Requests require private/loopback/link-local source and known Host/port checks;
   cross-site fetches are rejected. POST requires an exact http://Host Origin and
@@ -185,3 +185,27 @@ The dashboard has a compact host battery gauge and Tailscale status strip above 
 - Tailscale connected requires BackendState=Running and Self.Online=true. Missing CLI, login/approval needs, disconnected and unavailable states are explicit; unknown battery readings do not become zero.
 
 Sources: [host_status.py](host_status.py), [server.py](server.py), [web/host-status.js](web/host-status.js), [web/index.html](web/index.html), [docs/API.md](docs/API.md), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json).
+
+## dashboard-interactions — Stable mobile tabs and chart inspection
+
+Kind: `project`. Last reviewed: `2026-11-03`.
+
+Mobile section buttons preserve their screen position, and charts support sample inspection.
+
+- Mobile uses sticky tabs, content-sized panes and a viewport-sized minimum workspace; tab focus and section switching preserve scroll position. USB cards retain DOM identity across polls.
+- Overview, expanded and daily energy charts support mouse hover, tap and keyboard inspection with Manila time and units. Values come from recorded samples; missing samples are not interpolated. Expand icons have separate 44px targets.
+
+Sources: [web/app.js](web/app.js), [web/compact.css](web/compact.css), [web/chart-inspector.js](web/chart-inspector.js), [web/stats.js](web/stats.js), [web/power.js](web/power.js), [web/drives.js](web/drives.js), [test_web_interactions.py](test_web_interactions.py).
+
+## encrypted-drive-mounting — Separate password unlock from normal mounting
+
+Kind: `project`. Last reviewed: `2026-11-03`.
+
+Encrypted-drive mounting requests passwords only for locked targets and preserves mount errors for unlocked targets.
+
+- Unlock actions request mounted=true even for partially mounted drives. Password submissions explicitly request Mount; older in-flight polls cannot overwrite an action result.
+- The Python manager invokes native unlock only when fresh metadata reports a locked target. Native already-unlocked targets return the normal mount result directly; requiresPassword is reserved for targets still locked.
+- Unlock diagnostics use fixed authentication, privacy (TCC), permission or general messages in the API, without raw command output. On failure the helper writes diskutil's stderr (never the password) to its stderr, which drives.py logs to .runtime/server.log. Passwords remain stdin-only and are never saved.
+- diskutil error -69464 ('restricted by sandbox') is a TCC Removable Volumes denial; the background service cannot show the consent prompt, so Terminal unlocks succeed while the dashboard fails. TCC attributes requests to the launch agent's first executable, so the agent runs the Command Line Tools Python.app binary directly (identifier com.apple.python3), not caffeinate or the /usr/bin/python3 shim, and server.py starts `caffeinate -is -w <pid>` when MAC_CONTROL_STAY_AWAKE=1. On mbp15 that Python.app has Full Disk Access (granted 2026-11-03). Disk-image volumes are not subject to this check, so test images do not reproduce it.
+
+Sources: [drives.py](drives.py), [native/drives.m](native/drives.m), [web/drives.js](web/drives.js), [test_encrypted_drives.py](test_encrypted_drives.py), [test_web_interactions.py](test_web_interactions.py), [docs/API.md](docs/API.md), [service.py](service.py), [server.py](server.py), [docs/machines/mbp15.md](docs/machines/mbp15.md).

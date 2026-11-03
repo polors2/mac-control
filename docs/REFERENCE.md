@@ -26,6 +26,27 @@ with explicit unavailable states. No privileged helper or Tailscale setting chan
 are needed. `web/host-status.js` polls every ten seconds after completion while
 visible and authenticated, discarding late responses on pause/sign-out.
 
+## Dashboard interaction behavior
+
+Mobile navigation uses sticky tabs, content-sized panes, a viewport-sized minimum
+workspace and explicit scroll-position preservation. Main scroll anchoring is
+disabled on mobile so replacing telemetry cannot move the selected section. Tab
+keyboard focus uses preventScroll. USB cards keep their DOM identity during
+polling, and mount actions invalidate older in-flight drive polls.
+
+`web/chart-inspector.js` attaches hover, tap and keyboard inspection to overview,
+expanded and daily energy SVGs. Tooltips use recorded samples rather than
+interpolated values, label Manila timestamps and units, preserve missing-data
+gaps, and redraw their crosshair during live updates. Expand buttons have their
+own 44px targets so they do not intercept chart interaction.
+
+For encrypted drives, password submissions explicitly request Mount. The Python
+manager invokes unlock only while the current target is actually locked. Native
+mount errors on already-unlocked volumes are returned directly; requiresPassword
+is reserved for targets still locked. Unlock diagnostics are classified into fixed
+permission/authentication/general messages without returning raw command output.
+Passwords remain on stdin and are never stored.
+
 ## One-command install and update
 
 From a checkout of this repository, run as your normal Mac user:

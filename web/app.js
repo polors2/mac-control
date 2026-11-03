@@ -340,14 +340,23 @@ start();
 
 // Content panels keep the complete control center within a mobile viewport.
 function selectPanel(name, focus=false) {
+  const main=$('main'), tabs=$('.panel-tabs');
+  const tabTop=tabs.getBoundingClientRect().top, scroll=main.scrollTop;
   document.body.dataset.panel=name;
   $('#panel-controls').setAttribute('aria-label',name==='inputs' ? 'Built-in inputs':'Controls');
   document.querySelectorAll('[data-panel][role=tab]').forEach(button=>{
     const selected=button.dataset.panel===name;
     button.setAttribute('aria-selected',String(selected));button.tabIndex=selected ? 0:-1;
-    if(selected && focus) button.focus();
+    if(selected && focus) button.focus({preventScroll:true});
   });
+  if(matchMedia('(max-width:700px)').matches) main.scrollTop=scroll+tabs.getBoundingClientRect().top-tabTop;
 }
+function sizeMobilePanels() {
+  const main=$('main'), tabs=$('.panel-tabs');
+  main.style.setProperty('--panel-min-height',`${Math.max(0,main.clientHeight-tabs.offsetHeight-18)}px`);
+}
+const panelSizer=new ResizeObserver(sizeMobilePanels);
+panelSizer.observe($('main'));panelSizer.observe($('.panel-tabs'));sizeMobilePanels();
 document.querySelectorAll('[data-panel][role=tab]').forEach(button=>{
   button.addEventListener('click',()=>selectPanel(button.dataset.panel));
   button.addEventListener('keydown',event=>{

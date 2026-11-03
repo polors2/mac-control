@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Mac Control HTTP API",
-    "version": "1.1.0",
-    "description": "Documentation revision reviewed 2026-11-02 against this repository. All current /api/ GET/POST operations; not a negotiated runtime API version. The separate openapi.json documents Notifier /v1/ routes. Native helper response shapes are intentionally extensible."
+    "version": "1.1.1",
+    "description": "Documentation revision reviewed 2026-11-03 against this repository. All current /api/ GET/POST operations; not a negotiated runtime API version. The separate openapi.json documents Notifier /v1/ routes. Native helper response shapes are intentionally extensible."
   },
   "servers": [
     {
@@ -20,7 +20,7 @@
       "macControlSession": []
     }
   ],
-  "x-reviewed-on": "2026-11-02",
+  "x-reviewed-on": "2026-11-03",
   "x-implementation-sources": [
     "../../server.py",
     "../../auth.py",
@@ -994,7 +994,7 @@
           "Storage"
         ],
         "summary": "Mount, unmount or unlock-and-mount a USB target",
-        "description": "Mount, unmount or unlock-and-mount a USB target",
+        "description": "Mount, unmount or unlock-and-mount a USB target. Password unlock is attempted only if the freshly enumerated target is locked; an already-unlocked target uses normal mounting and retains mount/permission errors. Passwords travel on stdin and are not persisted.",
         "responses": {
           "200": {
             "description": "Successful request; inspect payload availability, capability and error fields.",
@@ -1957,7 +1957,8 @@
             "type": "string"
           },
           "requiresPassword": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "True when a mount/unlock error leaves the target locked; ordinary mount failures on unlocked targets do not request a password."
           }
         },
         "additionalProperties": true,

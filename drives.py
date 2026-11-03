@@ -26,6 +26,8 @@ class DriveManager:
         try:
             process = subprocess.run([self.binary, *args], input=None if password is None else password+'\n',
                                      capture_output=True, text=True, timeout=45 if password is not None else 25)
+            if process.returncode and process.stderr.strip():
+                print(f'USB drive helper ({args[0]}): {process.stderr.strip()[:600]}', flush=True)
             result = json.loads(process.stdout)
             if not isinstance(result.get('drives'), list): raise ValueError('Missing drive list')
             if process.returncode and not result.get('error'): raise ValueError('Drive helper failed')
@@ -77,7 +79,7 @@ class DriveManager:
             if target['mounted'] == mounted and target['state'] != 'partial': result = latest
             # The native helper independently revalidates UUID, external USB protocol,
             # internal-device flags, protected mount points, and whole-disk identity.
-            elif password is not None:
+            elif password is not None and target['locked']:
                 result = self.adopt(self.runner('unlock', target['id'], password=password))
             else: result = self.adopt(self.runner('mount' if mounted else 'unmount', target['id']))
             confirmed = next((drive for drive in result['drives'] if drive['id'] == target['id']), {})

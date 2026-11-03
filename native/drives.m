@@ -160,7 +160,7 @@ static NSString *unlockDrive(DASessionRef session, NSString *identifier) {
     NSDictionary *target = nil;
     for (NSDictionary *drive in enumerate(session)) if ([drive[@"id"] isEqual:identifier]) { target = drive; break; }
     if (!target) return @"This external USB drive is disconnected or unavailable.";
-    if (![target[@"locked"] boolValue]) { NSString *mounted = change(session, identifier, YES); if (!mounted) return nil; }
+    if (![target[@"locked"] boolValue]) return change(session, identifier, YES);
     NSDictionary *volume = target[@"volumes"][0];
     for (NSDictionary *candidate in target[@"volumes"]) if ([candidate[@"locked"] boolValue]) { volume = candidate; break; }
     if (![volume[@"filesystem"] isEqual:@"apfs"]) return @"Password unlock currently supports APFS. Unlock this format in Disk Utility first.";
@@ -175,7 +175,8 @@ static NSString *unlockDrive(DASessionRef session, NSString *identifier) {
     NSTask *task = [NSTask new]; task.executableURL = [NSURL fileURLWithPath:@"/usr/sbin/diskutil"];
     task.arguments = @[@"apfs", @"unlockVolume", volume[@"device"], @"-stdinpassphrase", @"-nomount"];
     NSPipe *input = [NSPipe pipe]; task.standardInput = input;
-    task.standardOutput = [NSFileHandle fileHandleWithNullDevice]; task.standardError = [NSFileHandle fileHandleWithNullDevice];
+    task.standardOutput = [NSFileHandle fileHandleWithNullDevice];
+    NSPipe *errors = [NSPipe pipe]; task.standardError = errors;
     if (![task launchAndReturnError:nil]) { CFRelease(disk); return @"The macOS unlock tool could not start."; }
     @try { [input.fileHandleForWriting writeData:secret]; [input.fileHandleForWriting closeFile]; }
     @catch (NSException *exception) { memset(secret.mutableBytes, 0, secret.length); if (task.running) kill(task.processIdentifier, SIGKILL); [task waitUntilExit]; CFRelease(disk); return @"The macOS unlock tool did not accept the request. Try again."; }
@@ -184,7 +185,22 @@ static NSString *unlockDrive(DASessionRef session, NSString *identifier) {
     while (task.running && CFAbsoluteTimeGetCurrent() < deadline) [NSThread sleepForTimeInterval:.05];
     if (task.running) { kill(task.processIdentifier, SIGKILL); [task waitUntilExit]; CFRelease(disk); return @"Unlock timed out. Check the drive and try again."; }
     [task waitUntilExit]; CFRelease(disk);
-    if (task.terminationStatus) return @"Could not unlock the drive. Check its password and try again.";
+    if (task.terminationStatus) {
+        // Classify diagnostics into fixed messages; never return raw tool output.
+        NSData *data = [errors.fileHandleForReading readDataToEndOfFile];
+        NSString *message = data.length <= 65536 ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding].lowercaseString : @"";
+        // diskutil diagnostics never contain the passphrase; log them to the helper's stderr for server.log.
+        NSString *diagnostic = [[message stringByReplacingOccurrencesOfString:@"\n" withString:@" | "] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+        fprintf(stderr, "diskutil unlockVolume exit %d: %s\n", task.terminationStatus, [diagnostic substringToIndex:MIN(diagnostic.length, (NSUInteger)500)].UTF8String ?: "");
+        // -69464: TCC "Removable Volumes" denial. The background service cannot show the consent prompt.
+        if ([message containsString:@"-69464"] || [message containsString:@"restricted by sandbox"])
+            return @"macOS privacy settings blocked this unlock. On the host Mac, allow Removable Volumes for Mac Control's Python in System Settings > Privacy & Security > Files and Folders, then try again.";
+        if ([message containsString:@"permission"] || [message containsString:@"privilege"] || [message containsString:@"ownership"] || [message containsString:@"not authorized"])
+            return @"macOS denied permission to unlock this drive. Unlock it in Disk Utility on the host Mac, then try Mount again.";
+        if ([message containsString:@"passphrase"] || [message containsString:@"password"] || [message containsString:@"authentication"])
+            return @"Could not unlock the drive. Check its volume password and try again.";
+        return @"macOS could not unlock this drive. Unlock it in Disk Utility on the host Mac, then try Mount again.";
+    }
     return change(session, identifier, YES);
 }
 int main(int argc, const char *argv[]) {
@@ -201,7 +217,7 @@ int main(int argc, const char *argv[]) {
             result[@"error"] = error;
             if (argc == 3 && (strcmp(argv[1], "unmount")))
                 for (NSDictionary *drive in result[@"drives"])
-                    if ([drive[@"id"] isEqual:@(argv[2])] && [drive[@"encrypted"] boolValue] && ![drive[@"mounted"] boolValue]) result[@"requiresPassword"] = @YES;
+                    if ([drive[@"id"] isEqual:@(argv[2])] && [drive[@"locked"] boolValue]) result[@"requiresPassword"] = @YES;
         }
         NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
         puts([[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding].UTF8String); CFRelease(session);

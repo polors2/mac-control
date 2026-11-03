@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "last_reviewed": "2026-11-02",
+  "last_reviewed": "2026-11-03",
   "human_readable_companion": "MEMORY.md",
   "entries": [
     {
@@ -43,7 +43,7 @@
       "kind": "project",
       "summary": "Mac Control's full HTTP API and the first integration use case are documented in docs/API.md, packages/contracts/mac-control.openapi.json and packages/contracts/mac-control-api.json.",
       "details": [
-        "The current implementation has 21 GET/POST operations under /api/. The API documentation revision is 1.1.0; the runtime has no negotiated API version or live OpenAPI route. Hardware response schemas remain extensible.",
+        "The current implementation has 21 GET/POST operations under /api/. The API documentation revision is 1.1.1; the runtime has no negotiated API version or live OpenAPI route. Hardware response schemas remain extensible.",
         "Requests require private/loopback/link-local source and known Host/port checks; cross-site fetches are rejected. POST requires an exact http://Host Origin and a JSON object from 1 through 4096 bytes, even for login and logout.",
         "Private routes use the mac_control cookie, with fixed 24-hour normal or 30-day remembered expiry. Session inspection, sign-in, first setup and stats/leave do not require a valid session; setup requires loopback and leave can remove only the supplied cookie/viewer lease. There is no Mac Control bearer-token API.",
         "Maintain the guide, local OpenAPI, API/use-case manifest and both memory files together as behavior changes. packages/contracts/openapi.json is the separate Notifier API, not the full Mac Control API."
@@ -55,7 +55,7 @@
         "packages/contracts/mac-control.openapi.json",
         "packages/contracts/mac-control-api.json"
       ],
-      "last_reviewed": "2026-11-02"
+      "last_reviewed": "2026-11-03"
     },
     {
       "id": "notifier-first-use-case",
@@ -149,6 +149,50 @@
         "packages/contracts/mac-control.openapi.json"
       ],
       "last_reviewed": "2026-11-02"
+    },
+    {
+      "id": "dashboard-interactions",
+      "title": "Stable mobile tabs and chart inspection",
+      "kind": "project",
+      "summary": "Mobile section buttons preserve their screen position, and charts support sample inspection.",
+      "details": [
+        "Mobile uses sticky tabs, content-sized panes and a viewport-sized minimum workspace; tab focus and section switching preserve scroll position. USB cards retain DOM identity across polls.",
+        "Overview, expanded and daily energy charts support mouse hover, tap and keyboard inspection with Manila time and units. Values come from recorded samples; missing samples are not interpolated. Expand icons have separate 44px targets."
+      ],
+      "sources": [
+        "web/app.js",
+        "web/compact.css",
+        "web/chart-inspector.js",
+        "web/stats.js",
+        "web/power.js",
+        "web/drives.js",
+        "test_web_interactions.py"
+      ],
+      "last_reviewed": "2026-11-03"
+    },
+    {
+      "id": "encrypted-drive-mounting",
+      "title": "Separate password unlock from normal mounting",
+      "kind": "project",
+      "summary": "Encrypted-drive mounting requests passwords only for locked targets and preserves mount errors for unlocked targets.",
+      "details": [
+        "Unlock actions request mounted=true even for partially mounted drives. Password submissions explicitly request Mount; older in-flight polls cannot overwrite an action result.",
+        "The Python manager invokes native unlock only when fresh metadata reports a locked target. Native already-unlocked targets return the normal mount result directly; requiresPassword is reserved for targets still locked.",
+        "Unlock diagnostics use fixed authentication, privacy (TCC), permission or general messages in the API, without raw command output. On failure the helper writes diskutil's stderr (never the password) to its stderr, which drives.py logs to .runtime/server.log. Passwords remain stdin-only and are never saved.",
+        "diskutil error -69464 ('restricted by sandbox') is a TCC Removable Volumes denial; the background service cannot show the consent prompt, so Terminal unlocks succeed while the dashboard fails. TCC attributes requests to the launch agent's first executable, so the agent runs the Command Line Tools Python.app binary directly (identifier com.apple.python3), not caffeinate or the /usr/bin/python3 shim, and server.py starts `caffeinate -is -w <pid>` when MAC_CONTROL_STAY_AWAKE=1. On mbp15 that Python.app has Full Disk Access (granted 2026-11-03). Disk-image volumes are not subject to this check, so test images do not reproduce it."
+      ],
+      "sources": [
+        "drives.py",
+        "native/drives.m",
+        "web/drives.js",
+        "test_encrypted_drives.py",
+        "test_web_interactions.py",
+        "docs/API.md",
+        "service.py",
+        "server.py",
+        "docs/machines/mbp15.md"
+      ],
+      "last_reviewed": "2026-11-03"
     }
   ]
 }
