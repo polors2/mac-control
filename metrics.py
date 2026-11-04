@@ -86,15 +86,17 @@ class StatsMonitor:
         self.viewers = {key: expiry for key, expiry in self.viewers.items() if expiry > now}
         return bool(self.viewers)
 
-    def snapshot(self, viewer, session=''):
+    def snapshot(self, viewer=None, session=''):
         with self.condition:
             self.active_locked()
-            self.viewers[self.viewer_key(viewer, session)] = time.monotonic() + self.lease_seconds
+            if viewer is not None:
+                self.viewers[self.viewer_key(viewer, session)] = time.monotonic() + self.lease_seconds
             history = [point for point in self.history if point['time'] >= time.time() - 120]
             result = {'history': history, 'interval': self.interval, 'window': 120, 'error': self.error,
                       'running': bool(history and time.time() - history[-1]['time'] < self.interval * 2.5),
                       'viewers': len(self.viewers), 'samples': self.samples}
-            self.condition.notify_all()
+            if viewer is not None:
+                self.condition.notify_all()
         return result
 
     def leave(self, viewer, session=''):

@@ -1,6 +1,6 @@
 # Mac Control HTTP API
 
-Documentation revision **1.4.0**, reviewed against this checkout on **2026-11-03**.
+Documentation revision **1.5.0**, reviewed against this checkout on **2026-11-04**.
 This revision versions the documentation, not a version negotiated by the server.
 The routes currently use `/api/` without an API version prefix.
 
@@ -15,6 +15,13 @@ Machine consumers should start with
 [Mac Control OpenAPI](../packages/contracts/mac-control.openapi.json).
 [openapi.json](../packages/contracts/openapi.json) describes the separate
 **Notifier API**, whose routes start with `/v1/`.
+
+All dashboard graphs and indicators have JSON read endpoints, and all hardware
+controls and presets have JSON action endpoints. Values are numeric data and
+metadata; observed telemetry and historical totals are read-only. See the
+[design and UI guide](UI.md) for every element's purpose, fields, units and API
+mapping. The **?** beside **Connected locally** opens both guides. Authenticated
+clients can also read `/api/docs`, `/api/ui` and `/api/openapi.json`.
 
 ## Request and response rules
 
@@ -112,6 +119,17 @@ rules. Read routes can still refresh caches or sampling leases.
 | `GET /api/power` | Optional query `hours`: `1` (default), `12`, `24` | Current watts, selected history, today's Wh/coverage/history, daily totals and timezone. Invalid windows return 400. |
 | `GET /api/connection` | None | Name, hostname, LAN `urls`, `localUrl`, port, `local`, fan installer path; `helperPath` only over loopback. Does not include raw `addresses`. |
 | `GET /api/file-activity` | None | First integration: selected Notifier snapshot, or HTTP 200 `available=false` fallback. See below. |
+| `GET /api/graphics` | None | Same graphics policy/helper state as `state.graphics`; cache up to two seconds. |
+| `GET /api/fans` | None | Fan mode, actual RPM, bounds and target/prediction/learning metadata supported by the helper; cache up to four seconds. Does not lease telemetry sampling. |
+| `GET /api/presets` | None | `presets` keyed by `work`, `evening`, `quiet`: name, brightness/keyboard/volume percentages, numeric mute 0/1. Shared catalog used by the browser. |
+| `POST /api/presets` | `preset`: `work`, `evening`, `quiet` | Applies supported brightness, keyboard, volume, mute in order; returns `preset`, hardware `state`, `applied` and `skipped` control names. Sequential, not atomic; 409 includes those fields plus `error`. Helper/transport failure can follow partial success; re-read state before retrying. |
+| `GET /api/stats/history` | None | Same numeric two-minute history and fan metadata as stats, without creating/renewing a viewer lease. Can be empty when sampling has paused. |
+| `GET /api/power/samples` | Optional query `hours`: `1` (default), `12`, `24` | Unbucketed stored observations: `now`, `hours`, `interval`, `timezone`, `error`, `samples`. Each sample has `time`, nullable `watts`, boolean `connected`, accounting `day`, `cumulative_wh`. Retained detail is 24 hours. |
+| `GET /api/docs` | None | `guide` and `api` strings containing repository UI and API guides as Markdown. |
+| `GET /api/ui` | None | Machine-readable inventory, usage, fields, units, read/action mapping and data semantics. |
+| `GET /api/openapi.json` | None | Complete Mac Control OpenAPI. Relative bridge references resolve beside this endpoint. |
+| `GET /api/mac-control-bridge.openapi.json` | None | Notifier-exported bridge contract, served to resolve OpenAPI references. |
+| `GET /api/mac-control-activity.schema.json` | None | Notifier-exported activity/configuration JSON Schema; documentation only, without private configuration or credentials. |
 
 For drive mounting, `requiresPassword=true` indicates that the target remains
 locked. Supplying a password for an already-unlocked volume uses a normal mount
@@ -132,6 +150,24 @@ every 10 seconds even without viewers. Power chart points use `{time,value}`;
 missing values preserve gaps. `watts=null` means unavailable, not zero; daily
 totals describe observed coverage, not an extrapolated full day. Epoch times are
 seconds; power responses carry their accounting timezone.
+
+`/api/stats/history` is passive: it never starts or extends the sampler lease.
+Live clients use `/api/stats?viewer=...`, keeping the same random ID and cookie
+between requests. History has one point per recorded sample, without chart
+interpolation. Fields include `cpu`, `ram`, `intelGpu`, `amdGpu` (percent),
+`memory.used/total/compressed` (bytes), `download`/`upload` (bytes/s), temperature
+objects with `celsius`, and fans with actual/target/minimum/maximum RPM. GPU
+metadata and `fanController` expose hardware/controller state. CPU/network rates
+can be null until two consecutive samples exist.
+
+Power `/api/power` graph histories can average time buckets; use
+`/api/power/samples` for the recorded values with no averaging. `connected=false`
+marks a startup, unavailable reading or continuity boundary; do not integrate
+across it. `cumulative_wh` is recorded daily Wh at that point; `day` uses the
+returned timezone. Daily totals/coverage remain in `/api/power.daily` for up to
+90 days after detailed samples expire. Browser tabs, expansion, cursor, draft
+controls and selected chart range are local presentation choices; API clients
+build their own views from these values.
 
 Host status reads `pmset -g batt` and an installed Tailscale CLI, with a two-second
 timeout per command and no background polling. The browser polls every ten seconds
@@ -291,6 +327,35 @@ finally:
     request("/api/logout", {})
 ```
 
+## Action examples
+
+Use the authenticated `request()` helper from the client example above. These
+perform real actions when executed; check hardware capability flags first.
+
+```python
+state = request('/api/state')
+history = request('/api/stats/history')  # no sampling lease
+raw_power = request('/api/power/samples?hours=24')
+request('/api/control', {'control': 'brightness', 'value': 60})
+request('/api/toggle', {'control': 'volume', 'enabled': False})
+request('/api/control', {'control': 'keyboardAuto', 'value': 1})
+request('/api/control', {'control': 'displaySleep', 'value': 0})
+request('/api/graphics', {'mode': 'auto'})
+request('/api/fans', {'mode': 'target', 'temperature': 70})
+request('/api/presets', {'preset': 'work'})
+request('/api/inputs', {'device': 'trackpad', 'enabled': True})
+request('/api/media', {'action': 'next'})
+# Replace with an eligible ID from GET /api/drives:
+request('/api/drives', {'id': 'VOLUME_UUID', 'mounted': True})
+```
+
+For constant fans, read `/api/fans` first and provide one integer RPM per returned
+fan, in order, within each firmware minimum and maximum. For locked drives, send
+the password only when mounting. Indicators and history have no write action.
+For live activity generate a random viewer with `uuid.uuid4().hex`, poll
+`/api/stats?viewer=ID` about every two seconds, and finish with
+`request('/api/stats/leave', {'viewer': ID})` using the same session cookie.
+
 ## Maintaining these documents
 
 The implementation is authoritative. When routes, validation, authorization or
@@ -299,5 +364,9 @@ response semantics change, update this guide, `mac-control.openapi.json`,
 code references and behavior current. Notifier owns the existing exported bundle
 described in [the contract index](../packages/contracts/README.md); regenerate it
 in its source repository rather than overwriting it with the Mac Control API.
-Documentation files are repository artifacts, not routes served by `server.py`.
+The guides are repository artifacts also served by `/api/docs`; the UI map and
+OpenAPI bundle use the authenticated routes above. Keep `docs/UI.md` and
+`dashboard-ui.json` aligned with UI/endpoint changes. The guide renderer creates
+text nodes, headings, lists, tables and code blocks; it executes no Markdown
+HTML. Reload the page to refresh an already-open guide cache.
 Documentation-only updates need no service or helper restart.

@@ -83,6 +83,31 @@ class WebInteractionTests(unittest.TestCase):
         scripts = {path.name: path.read_text() for path in self.web.glob('*.js')}
         self.assertTrue(self.evaluate('const scripts=' + json.dumps(scripts) + '; Object.values(scripts).forEach(source=>new Function(source)); JSON.stringify(true);'))
 
+    def test_guide_renders_tables_code_and_untrusted_markup_as_text(self):
+        source = (self.web / 'guide.js').read_text().split('let dashboardDocs=')[0]
+        script = '''
+          class Node {
+            constructor(tag) {this.tagName=tag.toUpperCase();this.children=[];this.textContent='';this.attrs={};}
+            append(...nodes) {this.children.push(...nodes);}
+            replaceChildren() {this.children=[];}
+            setAttribute(key,value) {this.attrs[key]=value;}
+          }
+          const document={createElement:tag=>new Node(tag),createTextNode:text=>({textContent:text})};
+          const target=new Node('div');
+        ''' + source + '''
+          renderGuide('# Title\\n\\n<script>alert(1)</script> [bad](javascript:alert) [safe](https://example.com)\\n\\n| Name | Data |\\n| --- | --- |\\n| CPU | `42` |\\n\\n```json\\n{"value":0}\\n```',target);
+          const all=[];function walk(node) {all.push(node);(node.children || []).forEach(walk);}walk(target);
+          JSON.stringify({tags:all.filter(n=>n.tagName).map(n=>n.tagName),
+            hrefs:all.filter(n=>n.href).map(n=>n.href),
+            text:all.map(n=>n.textContent).join(''),code:all.filter(n=>n.tagName==='CODE').map(n=>n.textContent)});
+        '''
+        result = self.evaluate(script)
+        self.assertNotIn('SCRIPT', result['tags'])
+        self.assertIn('<script>alert(1)</script>', result['text'])
+        self.assertEqual(result['hrefs'], ['https://example.com'])
+        self.assertIn('TABLE', result['tags'])
+        self.assertEqual(result['code'], ['42', '{"value":0}'])
+
     def test_api_paths_preserve_proxy_prefix_and_query_strings(self):
         source = (self.web / 'app.js').read_text().split('function appPath(')[1].split('async function api(')[0]
         for prefix in ('', '/mc'):

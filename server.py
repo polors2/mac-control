@@ -51,6 +51,8 @@ GRAPHICS = None
 HOSTS = set()
 SERVE_CONFIG = None
 INFO = {}
+PRESETS = json.loads((WEB / 'presets.json').read_text())
+CONTRACTS = ROOT / 'packages' / 'contracts'
 
 
 def prepare():
@@ -218,28 +220,55 @@ class Handler(BaseHTTPRequestHandler):
             if self.require_session():
                 self.json(200, HOST_STATUS.snapshot())
             return
-        if path == '/api/power':
+        if path in ('/api/power', '/api/power/samples'):
             if self.require_session():
                 hours = parse_qs(urlsplit(self.path).query).get('hours', ['1'])[0]
                 if hours not in ('1', '12', '24'):
                     self.json(400, {'error': 'Power history must be 1, 12, or 24 hours.'})
                     return
-                self.json(200, POWER.snapshot(int(hours)))
+                read = POWER.raw_samples if path.endswith('/samples') else POWER.snapshot
+                self.json(200, read(int(hours)))
             return
         if path == '/api/stats/status':
             if self.require_session():
                 self.json(200, STATS.diagnostics())
             return
-        if path == '/api/stats':
+        if path in ('/api/stats', '/api/stats/history'):
             if self.require_session():
-                viewer = parse_qs(urlsplit(self.path).query).get('viewer', [''])[0]
-                if not re.fullmatch(r'[a-f0-9]{32}', viewer):
+                passive = path.endswith('/history')
+                viewer = None if passive else parse_qs(urlsplit(self.path).query).get('viewer', [''])[0]
+                if not passive and not re.fullmatch(r'[a-f0-9]{32}', viewer):
                     self.json(400, {'error': 'A visible dashboard viewer ID is required.'})
                     return
                 result = STATS.snapshot(viewer, self.session_token())
                 result['fanController'] = FANS.status()
                 result['fanControl'] = bool(result['fanController'].get('installed'))
                 self.json(200, result)
+            return
+        if path in ('/api/fans', '/api/graphics'):
+            if self.require_session():
+                try:
+                    controller = FANS if path == '/api/fans' else GRAPHICS
+                    self.json(200, controller.status())
+                except RuntimeError as error:
+                    self.json(503, {'error': str(error)})
+            return
+        if path == '/api/presets':
+            if self.require_session():
+                self.json(200, {'presets': PRESETS})
+            return
+        if path == '/api/docs':
+            if self.require_session():
+                self.json(200, {'guide': (ROOT / 'docs' / 'UI.md').read_text(),
+                                'api': (ROOT / 'docs' / 'API.md').read_text()})
+            return
+        contract_files = {'/api/openapi.json': 'mac-control.openapi.json',
+                          '/api/mac-control-bridge.openapi.json': 'mac-control-bridge.openapi.json',
+                          '/api/mac-control-activity.schema.json': 'mac-control-activity.schema.json',
+                          '/api/ui': 'dashboard-ui.json'}
+        if path in contract_files:
+            if self.require_session():
+                self.respond(200, (CONTRACTS / contract_files[path]).read_bytes(), 'application/json; charset=utf-8')
             return
         if path == '/api/drives':
             if self.require_session():
@@ -273,6 +302,8 @@ class Handler(BaseHTTPRequestHandler):
                  '/host-status.js': ('host-status.js', 'text/javascript; charset=utf-8'),
                  '/drives.js': ('drives.js', 'text/javascript; charset=utf-8'),
                  '/inputs.js': ('inputs.js', 'text/javascript; charset=utf-8'),
+                 '/guide.js': ('guide.js', 'text/javascript; charset=utf-8'),
+                 '/guide.css': ('guide.css', 'text/css; charset=utf-8'),
                  '/favicon.svg': ('favicon.svg', 'image/svg+xml')}
         files['/notifier-activity.js'] = ('notifier-activity.js', 'text/javascript; charset=utf-8')
         files['/notifier-activity.css'] = ('notifier-activity.css', 'text/css; charset=utf-8')
@@ -351,7 +382,26 @@ class Handler(BaseHTTPRequestHandler):
             self.json(200, {'authenticated': False}, f'mac_control=; HttpOnly; SameSite=Strict; {self.cookie_scope()}; Max-Age=0')
             return
         try:
-            if path == '/api/graphics':
+            if path == '/api/presets':
+                preset_id = body.get('preset')
+                if not isinstance(preset_id, str) or preset_id not in PRESETS:
+                    self.json(400, {'error': 'Choose work, evening, or quiet.'})
+                    return
+                state = hardware(fresh=True)
+                applied, skipped = [], []
+                for control in ('brightness', 'keyboard', 'volume', 'mute'):
+                    if not state['capabilities'].get(control):
+                        skipped.append(control)
+                        continue
+                    state = hardware('set', control, str(PRESETS[preset_id][control]))
+                    if state.get('error'):
+                        self.json(409, {'preset': preset_id, 'state': state, 'applied': applied,
+                                        'skipped': skipped, 'error': state['error']})
+                        return
+                    applied.append(control)
+                self.json(200, {'preset': preset_id, 'state': state, 'applied': applied, 'skipped': skipped})
+                return
+            elif path == '/api/graphics':
                 try: result = GRAPHICS.set_mode(body.get('mode'))
                 except ValueError as error:
                     self.json(400, {'error': str(error)})

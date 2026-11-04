@@ -123,6 +123,14 @@ class PowerLog:
     def close(self):
         self.db.close()
 
+    def raw_samples(self, hours=1, now=None):
+        """Return recorded readings without chart bucketing or interpolation."""
+        now = time.time() if now is None else now
+        rows = self.db.execute('SELECT * FROM power_samples WHERE time >= ? AND time <= ? ORDER BY time',
+                               (now - hours * 3600, now))
+        return {'now': now, 'hours': hours, 'interval': self.interval, 'timezone': self.zone.key,
+                'samples': [{**dict(row), 'connected': bool(row['connected'])} for row in rows]}
+
 
 class PowerMonitor:
     def __init__(self, binary, path, interval=10, reader=None):
@@ -159,6 +167,10 @@ class PowerMonitor:
             if self.error:
                 result.update(running=False, watts=None)
             return result
+
+    def raw_samples(self, hours=1):
+        with self.lock:
+            return {**self.log.raw_samples(hours), 'error': self.error}
 
     def close(self):
         self.stop.set()

@@ -34,6 +34,17 @@ class PowerLogTests(unittest.TestCase):
         self.assertTrue(result['running'])
         self.assertEqual(self.path.stat().st_mode & 0o777, 0o600)
 
+    def test_raw_samples_preserve_values_nulls_and_continuity_without_bucketing(self):
+        for offset, watts in [(0, 36), (10, 72), (20, None), (30, 0), (40, 36)]:
+            self.record(offset, watts)
+        result = self.log.raw_samples(24, self.start + 40)
+        self.assertEqual([row['watts'] for row in result['samples']], [36, 72, None, 0, 36])
+        self.assertEqual([row['connected'] for row in result['samples']], [False, True, False, False, True])
+        self.assertEqual([row['time'] for row in result['samples']], [self.start + n for n in (0,10,20,30,40)])
+        self.assertEqual(result['samples'][-1]['cumulative_wh'], self.log.snapshot(1, self.start + 40)['today']['energyWh'])
+        self.assertEqual(result['timezone'], 'Asia/Manila')
+        self.assertEqual(len(self.log.raw_samples(1, self.start + 3620)['samples']), 3)
+
     def test_midnight_splits_linear_energy_between_manila_days(self):
         self.start = datetime(2026, 11, 2, 23, 59, 55, tzinfo=ZoneInfo('Asia/Manila')).timestamp()
         self.record(0, 36)

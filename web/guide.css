@@ -1,0 +1,21 @@
+.control-center .guide-button{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid #a1b19d;border-radius:50%;background:transparent;color:var(--ink);font-family:inherit;font-size:18px;font-weight:600;line-height:1;cursor:pointer}
+.control-center .guide-button:hover{background:#e4eadc}
+.control-center .guide-button:focus-visible,.guide-navigation :focus-visible,.guide-table:focus-visible{outline:3px solid #476344;outline-offset:3px}
+.control-center #guide-dialog{width:min(1120px,calc(100vw - 32px));padding:32px;overscroll-behavior:contain}
+.guide-navigation{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding-bottom:20px;border-bottom:1px solid #ccd5c5}
+.guide-navigation button,.guide-navigation a{min-height:44px;display:inline-flex;align-items:center;padding:8px 14px;border:1px solid #a1b19d;border-radius:12px;background:transparent;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.guide-navigation button[aria-pressed=true]{background:#31472f;color:#fff;border-color:#31472f}
+.guide-content{font-size:16px;line-height:1.7;overflow-wrap:anywhere}
+.guide-content h2,.guide-content h3,.guide-content h4{margin:28px 0 12px;line-height:1.3}
+.control-center .guide-content h2{font-size:28px}
+.guide-content h3{font-size:23px}.guide-content h4{font-size:19px}
+.guide-content p,.guide-content ul,.guide-content ol{margin:12px 0}
+.guide-content ul,.guide-content ol{padding-left:25px}.guide-content li{margin:7px 0}
+.guide-content a{color:#31582f;text-decoration:underline}
+.guide-content pre{overflow:auto;background:#e8ede2;border-radius:12px;padding:16px;white-space:pre}
+.control-center .guide-content pre code{word-break:normal;overflow-wrap:normal}
+.guide-table{overflow-x:auto;max-width:100%;border:1px solid #ccd5c5;border-radius:12px;margin:16px 0}
+.guide-table table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px;line-height:1.6}
+.guide-table th,.guide-table td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid #ccd5c5}
+.guide-table th{background:#e8ede2}.guide-table tr:last-child td{border-bottom:0}
+@media(max-width:700px){.control-center #guide-dialog{padding:24px 18px}.guide-navigation{gap:8px}.guide-navigation button,.guide-navigation a{font-size:14px;padding:8px 10px}.control-center .guide-content h2{font-size:25px}}
