@@ -1,8 +1,8 @@
 {
   "document_type": "mac_control_api_and_use_cases",
   "schema_version": 1,
-  "documentation_revision": "1.4.0",
-  "last_reviewed": "2026-11-03",
+  "documentation_revision": "1.5.0",
+  "last_reviewed": "2026-11-04",
   "human_readable_companion": "docs/API.md",
   "api": {
     "service": "Mac Control",
@@ -49,8 +49,8 @@
       "hardware_schema": "extensible_by_capability_and_helper_version",
       "unsupported_methods": "standard_handler_unsupported_method_response_normally_501_HTML"
     },
-    "operation_count": 21,
-    "live_contract_endpoint": null,
+    "operation_count": 32,
+    "live_contract_endpoint": "/api/openapi.json",
     "host_status": {
       "endpoint": "GET /api/host-status",
       "authentication": "mac_control_session_cookie",
@@ -176,6 +176,20 @@
       "rate_limiting": "shares_proxy_loopback_source_bucket",
       "mbp15_url": "https://mbp15.tail19753.ts.net/mc",
       "public_funnel_enabled": false
+    },
+    "dashboard": {
+      "human_guide": "docs/UI.md",
+      "ui_map": "packages/contracts/dashboard-ui.json",
+      "live_ui_map": "/api/ui",
+      "live_guides": "/api/docs",
+      "passive_history": "/api/stats/history",
+      "raw_power_samples": "/api/power/samples",
+      "preset_catalog": "web/presets.json",
+      "presets_read": "GET /api/presets",
+      "presets_apply": "POST /api/presets",
+      "preset_application": "sequential_not_atomic_skip_unavailable_stop_on_error",
+      "historical_telemetry_writable": false,
+      "presentation_state": "client_local_tabs_expansion_cursor_range_drafts_not_shared_hardware"
     }
   },
   "use_cases": [
@@ -308,7 +322,9 @@
       "packages/contracts/mac-control.openapi.json",
       "packages/contracts/mac-control-api.json",
       "MEMORY.md",
-      "MEMORY.json"
+      "MEMORY.json",
+      "docs/UI.md",
+      "packages/contracts/dashboard-ui.json"
     ],
     "notifier_bundle_regeneration": "Run export_contracts.py in the separate Notifier repository; see docs/integrations/mac-control.md.",
     "documentation_only_restart_required": false

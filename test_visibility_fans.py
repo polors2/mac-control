@@ -35,6 +35,18 @@ class VisibleSamplerTests(unittest.TestCase):
         self.monitor.snapshot('first', 'session')
         self.wait_for(lambda: self.reads >= 2)
 
+    def test_passive_history_does_not_start_or_renew_sampling(self):
+        self.assertEqual(self.monitor.snapshot()['history'], [])
+        self.assertEqual(self.monitor.diagnostics()['viewers'], 0)
+        self.assertEqual(self.reads, 0)
+        self.monitor.snapshot('active', 'session')
+        self.wait_for(lambda: self.reads >= 2)
+        self.monitor.leave('active', 'session')
+        result = self.monitor.snapshot()
+        self.assertTrue(result['history'])
+        self.assertEqual(result['viewers'], 0)
+        self.assertFalse(self.monitor.diagnostics()['sampling'])
+
     def test_last_viewer_leaving_stops_new_reads(self):
         self.monitor.snapshot('first', 'session')
         self.wait_for(lambda: self.reads >= 2)

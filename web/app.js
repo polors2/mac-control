@@ -37,11 +37,7 @@ const sliders = ['brightness', 'keyboard', 'volume'];
 let state = null, online = false, busy = false, authenticated = false, setupRequired = false, canSetup = false;
 let drainTimer, toastTimer, lastInteraction = 0, failures = 0;
 const pending = new Map(), desired = new Map();
-const presets = {
-  work:{name:'Workday', brightness:75,keyboard:45,volume:30,mute:0},
-  evening:{name:'After hours',brightness:35,keyboard:25,volume:15,mute:0},
-  quiet:{name:'Quiet time',brightness:50,keyboard:30,volume:0,mute:1}
-};
+let presets = {};
 
 function appPath(path) {
   return `${document.querySelector('meta[name="mac-control-base"]')?.content || ''}${path}`;
@@ -152,8 +148,9 @@ function render() {
   $('#media-help').hidden = !!capabilities.media;
   $('#media-description').textContent = capabilities.media ? 'Your Mac’s media keys, right here.':'One-time Accessibility setup for media keys.';
   document.querySelectorAll('[data-preset]').forEach(button => {
-    button.disabled = !online || busy || !sliders.some(key=>capabilities[key]);
     const preset = presets[button.dataset.preset];
+    button.disabled = !online || busy || pending.size>0 || !preset || !sliders.some(key=>capabilities[key]);
+    if (!preset) return;
     const active = online && state && sliders.every(key=>!capabilities[key] || Math.abs((state[key] ?? -100)-preset[key])<=1) && (!capabilities.mute || !!state.muted===!!preset.mute);
     button.classList.toggle('active',!!active);
     button.setAttribute('aria-pressed',String(!!active));
@@ -222,12 +219,16 @@ document.querySelectorAll('[data-max]').forEach(button => button.addEventListene
 document.querySelectorAll('[data-power]').forEach(button=>button.addEventListener('click',()=>enqueue(`${button.dataset.power}Power`,button.getAttribute('aria-pressed')!=='true',true)));
 $('#display-sleep').addEventListener('click',()=>enqueue('displaySleep',Number(!(desired.has('displaySleep') ? desired.get('displaySleep'):state.displaySleep || state.displayAsleep)),true));
 $('#keyboard-auto').addEventListener('click',()=>enqueue('keyboardAuto',Number(!(desired.has('keyboardAuto') ? desired.get('keyboardAuto'):state.keyboardAuto)),true));
-document.querySelectorAll('[data-preset]').forEach(button => button.addEventListener('click',()=>{
-  const preset = presets[button.dataset.preset];
-  const skipped = sliders.filter(control=>!state.capabilities[control]);
-  for (const control of sliders) if (state.capabilities[control]) enqueue(control,preset[control],true);
-  if (state.capabilities.mute) enqueue('mute',preset.mute,true);
-  if (skipped.length) toast(`Applying available controls. ${skipped.join(', ')} unavailable on this Mac.`,true);
+document.querySelectorAll('[data-preset]').forEach(button => button.addEventListener('click',async()=>{
+  busy=true; lastInteraction=Date.now(); render();
+  try {
+    const result=await api('/api/presets',{preset:button.dataset.preset},40000);
+    state=result.state;
+    toast(result.skipped.length ? `Applied available controls. ${result.skipped.join(', ')} unavailable on this Mac.` : `${presets[button.dataset.preset].name} applied.`,result.skipped.length>0);
+  } catch(error) {
+    if(error.data?.state) state=error.data.state;
+    toast(error.message,true);
+  } finally {busy=false;lastInteraction=Date.now();render();if(pending.size) drain();}
 }));
 document.querySelectorAll('[data-media]').forEach(button => button.addEventListener('click',async()=>{
   button.disabled = true; lastInteraction = Date.now();
@@ -241,6 +242,7 @@ document.querySelectorAll('[data-media]').forEach(button => button.addEventListe
 async function refresh(force=false) {
   if (!authenticated || busy || pending.size || (!force && Date.now()-lastInteraction < 1200)) return;
   try {
+    if (!Object.keys(presets).length) presets=(await api('/api/presets')).presets;
     state = await api('/api/state'); failures = 0; setOnline(true);
   } catch(error) {
     failures++;

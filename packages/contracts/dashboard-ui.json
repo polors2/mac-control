@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "documentation_revision": "1.5.0",
+  "last_reviewed": "2026-11-04",
+  "human_readable_companion": "docs/UI.md",
+  "api_contract": "/api/openapi.json",
+  "guides": "/api/docs",
+  "principles": {
+    "api_payloads": "numeric_observations_and_state_no_rendered_charts",
+    "measurements": "read_only",
+    "hardware_controls": "read_and_write_using_documented_actions",
+    "browser_presentation": "local_not_shared",
+    "unavailable": "null_or_explicit_state_never_assume_zero",
+    "timestamp_unit": "unix_seconds",
+    "display_timezone": "Asia/Manila",
+    "power_retention_hours": 24,
+    "daily_retention_days": 90,
+    "live_stats_lease_seconds": 5
+  },
+  "sections": [
+    {
+      "id": "controls",
+      "elements": [
+        {
+          "label": "Connection and sync labels",
+          "usage": "Show communication and pending changes; they are browser status, not hardware settings.",
+          "read": "GET /api/session; GET /api/state",
+          "action": "Sign in with POST /api/session; sign out with POST /api/logout."
+        },
+        {
+          "label": "Network",
+          "usage": "Open the dialog and copy a LAN address for another device. Keep the Mac and service running.",
+          "read": "GET /api/connection",
+          "action": "Copy is a local browser action."
+        },
+        {
+          "label": "Auto / Intel / AMD",
+          "usage": "Select the saved macOS graphics policy. External displays require discrete AMD; policy does not identify which GPU an app is using.",
+          "read": "GET /api/graphics; state.graphics",
+          "action": "POST /api/graphics with mode auto, intel or amd."
+        },
+        {
+          "label": "Claude and Codex",
+          "usage": "Percentages used, window labels, reset countdown and update/reset tooltips. Readings older than 30 minutes dim. These are usage observations.",
+          "read": "GET /api/host-status: claude, codex",
+          "action": "Read-only. Sign-in/setup belongs to each provider's CLI on the Mac."
+        },
+        {
+          "label": "Battery",
+          "usage": "Charge percentage, power source and charging state of the host Mac.",
+          "read": "GET /api/host-status: battery",
+          "action": "Read-only."
+        },
+        {
+          "label": "Tailscale",
+          "usage": "Host connection state; green requires Running and online.",
+          "read": "GET /api/host-status: tailscale",
+          "action": "Read-only."
+        },
+        {
+          "label": "Brightness and Volume",
+          "usage": "Drag the 0–100 slider or use the end buttons to change by five points.",
+          "read": "GET /api/state: brightness, volume, muted, capabilities",
+          "action": "POST /api/control with control brightness or volume and numeric value."
+        },
+        {
+          "label": "Brightness / Backlight / Sound On–Off",
+          "usage": "Off preserves the previous positive level. On restores it; sound Off mutes. Brightness Off persists against external resets.",
+          "read": "GET /api/state: restoreLevels, displayOff, muted",
+          "action": "POST /api/toggle with control brightness, keyboard or volume and boolean enabled."
+        },
+        {
+          "label": "Display sleep",
+          "usage": "Sleep requests actual display sleep; Wake releases it and restores brightness. A positive brightness command/preset also wakes it. Choice is saved.",
+          "read": "GET /api/state: displaySleep, displayAsleep",
+          "action": "POST /api/control with control displaySleep and numeric value 1 for Sleep or 0 for Wake."
+        },
+        {
+          "label": "Built-in Keyboard and Trackpad",
+          "usage": "Toggle physical built-in inputs independently. External inputs remain available. Both start enabled after reboot/helper restart.",
+          "read": "GET /api/inputs",
+          "action": "POST /api/inputs with device keyboard or trackpad and boolean enabled."
+        },
+        {
+          "label": "Backlight and Automatic",
+          "usage": "Backlight adjusts keyboard illumination; Automatic follows ambient light. Physical keyboard input is a separate control.",
+          "read": "GET /api/state: keyboard, keyboardAuto, keyboardSuppressed",
+          "action": "POST /api/control with control keyboard (0–100) or keyboardAuto (numeric 0/1)."
+        },
+        {
+          "label": "Media Previous / Play / Next",
+          "usage": "Send media keys. Play is a play/pause command; it is not a reported playback state.",
+          "read": "GET /api/state: capabilities.media",
+          "action": "POST /api/media with action previous, play or next."
+        },
+        {
+          "label": "Quick presets",
+          "usage": "Workday, After hours and Quiet time apply brightness, backlight, volume and mute. Unsupported controls are skipped.",
+          "read": "GET /api/presets; GET /api/state",
+          "action": "POST /api/presets with preset work, evening or quiet."
+        },
+        {
+          "label": "Auto / Constant / Target / Max fans",
+          "usage": "Auto returns control to Apple. Constant saves bounded RPM per fan on slider release. Target saves a 50–85°C CPU goal on blur or Enter. Max selects each fan's firmware maximum.",
+          "read": "GET /api/fans",
+          "action": "POST /api/fans with mode; add speeds for constant or temperature for target."
+        },
+        {
+          "label": "CPU / Intel / AMD temperatures and fan RPM",
+          "usage": "Celsius readings and actual RPM, with firmware maximum. Target's forecast, headroom and learning count describe the controller.",
+          "read": "GET /api/stats or /api/stats/history; GET /api/fans",
+          "action": "Measurements are read-only; select fan mode to change cooling."
+        },
+        {
+          "label": "USB drive cards",
+          "usage": "Show eligible connected external USB volumes. Mount/unmount with the card button. Unlock requests a password only for a locked volume.",
+          "read": "GET /api/drives",
+          "action": "POST /api/drives with id and boolean mounted; optional password when mounting."
+        },
+        {
+          "label": "Setup/help buttons",
+          "usage": "Open instructions for installing or granting permission to helpers on the host Mac.",
+          "read": "GET /api/connection; capability/helper state",
+          "action": "Opening instructions has no hardware action; installation is performed on the host."
+        },
+        {
+          "label": "? guide",
+          "usage": "Open this guide, API reference and live JSON contracts.",
+          "read": "GET /api/docs; GET /api/ui; GET /api/openapi.json",
+          "action": "Navigation only."
+        }
+      ]
+    },
+    {
+      "id": "graphs",
+      "elements": [
+        {
+          "label": "CPU utilization",
+          "fields_and_units": "history[].cpu, percent of all cores",
+          "read": "GET /api/stats or /api/stats/history"
+        },
+        {
+          "label": "Intel GPU utilization",
+          "fields_and_units": "history[].intelGpu, percent; intelGpuInfo contains device state",
+          "read": "GET /api/stats or /api/stats/history"
+        },
+        {
+          "label": "AMD GPU utilization",
+          "fields_and_units": "history[].amdGpu, percent; amdGpuInfo contains device state",
+          "read": "GET /api/stats or /api/stats/history"
+        },
+        {
+          "label": "RAM utilization and free memory",
+          "fields_and_units": "history[].ram, percent used; memory.used/total/compressed, bytes. Free = total minus used; UI labels binary GiB as GB.",
+          "read": "GET /api/stats or /api/stats/history"
+        },
+        {
+          "label": "Network download and upload",
+          "fields_and_units": "history[].download/upload, bytes per second; interfaces lists included interfaces",
+          "read": "GET /api/stats or /api/stats/history"
+        },
+        {
+          "label": "Expanded activity charts",
+          "fields_and_units": "Same series; Now is latest sample, Average and Peak use available samples in the two-minute window. Expanded RAM also shows bytes and free fraction.",
+          "read": "GET /api/stats or /api/stats/history"
+        },
+        {
+          "label": "Temperature / cooling readings",
+          "fields_and_units": "history[].cpuTemperature/intelTemperature/amdTemperature.celsius, °C; fans[].rpm/minimum/maximum/target, RPM; fanController includes prediction and target metadata",
+          "read": "GET /api/stats or /api/stats/history; GET /api/fans"
+        },
+        {
+          "label": "Current draw and expanded draw",
+          "fields_and_units": "watts, W; sampleTime, epoch seconds",
+          "read": "GET /api/power"
+        },
+        {
+          "label": "1h / 12h / 24h power chart",
+          "fields_and_units": "history[].time/value, seconds/W; graph series may average buckets",
+          "read": "GET /api/power?hours=1, 12 or 24"
+        },
+        {
+          "label": "Energy today",
+          "fields_and_units": "today.history[].time/value, seconds/Wh; today.energyWh and coveredSeconds",
+          "read": "GET /api/power"
+        },
+        {
+          "label": "Daily energy chart and table",
+          "fields_and_units": "daily[].day/energy_wh/covered_seconds/first_sample/last_sample; Wh and seconds, up to 90 Manila calendar days",
+          "read": "GET /api/power"
+        },
+        {
+          "label": "Expanded daily summary",
+          "fields_and_units": "Logged total sums recorded daily Wh; average draw = energy_wh × 3600 / covered_seconds when coverage is positive",
+          "read": "GET /api/power"
+        },
+        {
+          "label": "Unbucketed power readings",
+          "fields_and_units": "samples[].time/watts/connected/day/cumulative_wh; exact stored observations, including nulls and continuity boundaries",
+          "read": "GET /api/power/samples?hours=1, 12 or 24"
+        },
+        {
+          "label": "Copy progress bars",
+          "fields_and_units": "Notifier transfers, file_activity and finder_progress observations, including byte counts, percentages and current-file details",
+          "read": "GET /api/file-activity"
+        }
+      ]
+    }
+  ]
+}

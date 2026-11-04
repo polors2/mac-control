@@ -125,6 +125,25 @@ The 5-hour windows show a live `Resets in H:MM:SS` countdown below the percentag
 
 Chart tooltips show exact recorded samples in Manila time, with percentage, transfer-rate, watts or energy units. Missing samples stay gaps. Hover with a mouse, tap on a phone, or focus a chart and use Left/Right, Home/End and Escape. Both overview and expanded charts support inspection, including the daily energy log. Mobile section buttons stay pinned while browsing controls; switching sections preserves their position.
 
+## Dashboard guide and raw-data API
+
+Click **?** beside **Connected locally** for the design/UI guide and API
+reference, including every graph, toggle, unit and action. It supports mouse,
+touch and keyboard, and remains available on mobile. Repository copies:
+[UI guide](docs/UI.md), [API reference](docs/API.md),
+[OpenAPI](packages/contracts/mac-control.openapi.json) and
+[UI map](packages/contracts/dashboard-ui.json).
+
+All dashboard hardware controls and presets can be read/applied through the
+JSON API; graph data and indicators are read-only observations. Use
+`/api/stats/history` for passive sample history, `/api/stats?viewer=...` for live
+sampling, and `/api/power/samples?hours=24` for unbucketed recorded power.
+`/api/fans`, `/api/graphics` and `/api/presets` provide direct reads; POST to the
+same paths for documented actions. The browser uses the same preset catalog
+and action endpoint. Live guides/contracts are at `/api/docs`, `/api/ui` and
+`/api/openapi.json` after signing in. Private Tailscale access preserves `/mc`.
+Existing password, session and origin checks apply.
+
 ## Persistent Display Off
 
 **Graphics mode:** the header’s **Auto / Intel / AMD** selector reads the current macOS graphics policy. The dedicated GPU helper needs one administrator installation with `install-graphics-helper.command` (also included in `install.command`). After that, switching never prompts, including from another device. Auto enables automatic switching, Intel requests integrated graphics, and AMD requests discrete graphics. The setting applies on battery and AC power and is persisted by macOS. External displays require the discrete GPU. The selector confirms the saved policy, rather than which GPU each application is rendering with. Temporary status-read failures leave all three actions available, including Auto for recovery. The root-owned helper accepts only status and these three fixed modes over a private socket restricted to the installing user and root; it never runs browser-provided shell commands. Installing or restarting it preserves the current GPU policy and does not restart the fan/input helpers. `uninstall-graphics-helper.command` removes it while keeping the current policy.

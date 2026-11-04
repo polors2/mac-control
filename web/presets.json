@@ -1,0 +1,5 @@
+{
+  "work": {"name": "Workday", "brightness": 75, "keyboard": 45, "volume": 30, "mute": 0},
+  "evening": {"name": "After hours", "brightness": 35, "keyboard": 25, "volume": 15, "mute": 0},
+  "quiet": {"name": "Quiet time", "brightness": 50, "keyboard": 30, "volume": 0, "mute": 1}
+}

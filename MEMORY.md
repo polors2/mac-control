@@ -5,7 +5,7 @@ Provider-neutral project memory for humans and AI agents. Read this file and
 Both files describe the same durable knowledge. They are plain UTF-8 Markdown
 and JSON, with no provider-specific tooling or dependencies.
 
-Format version: `1`. Last reviewed: `2026-11-03`.
+Format version: `1`. Last reviewed: `2026-11-04`.
 
 ## How to maintain this memory
 
@@ -67,30 +67,16 @@ Sources: [README.md](README.md), [docs/REFERENCE.md](docs/REFERENCE.md),
 
 ## api-interface — Mac Control HTTP interface
 
-Kind: `project`. Last reviewed: `2026-11-03`.
+Kind: `project`. Last reviewed: `2026-11-04`.
 
-Mac Control's full HTTP API and the first integration use case are documented in
-docs/API.md, packages/contracts/mac-control.openapi.json and
-packages/contracts/mac-control-api.json.
+Mac Control's full HTTP API and the first integration use case are documented in docs/API.md, packages/contracts/mac-control.openapi.json and packages/contracts/mac-control-api.json.
 
-- The current implementation has 21 GET/POST operations under /api/. The API
-  documentation revision is 1.4.0; the runtime has no negotiated API version or
-  live OpenAPI route. Hardware response schemas remain extensible.
-- Requests require private/loopback/link-local source and known Host/port checks;
-  cross-site fetches are rejected. POST requires exact http://Host Origin for direct
-  access or the configured HTTPS origin for trusted loopback Tailscale Serve, and
-  a JSON object from 1 through 4096 bytes, even for login and logout.
-- Private routes use the mac_control cookie, with fixed 24-hour normal or 30-day
-  remembered expiry. Session inspection, sign-in, first setup and stats/leave do
-  not require a valid session; setup requires loopback and leave can remove only
-  the supplied cookie/viewer lease. There is no Mac Control bearer-token API.
-- Maintain the guide, local OpenAPI, API/use-case manifest and both memory files
-  together as behavior changes. packages/contracts/openapi.json is the separate
-  Notifier API, not the full Mac Control API.
+- The implementation has 32 GET/POST operations under /api/. Documentation revision is 1.5.0; there is no negotiated API version. Authenticated /api/openapi.json serves the full contract with its bridge reference; /api/ui serves the UI map; /api/docs serves both Markdown guides. Hardware schemas remain extensible.
+- Requests require private/loopback/link-local source and known Host/port checks; cross-site fetches are rejected. POST requires exact http://Host Origin for direct access or the configured HTTPS origin for trusted loopback Tailscale Serve, and a JSON object from 1 through 4096 bytes, even for login and logout.
+- Private routes use the mac_control cookie, with fixed 24-hour normal or 30-day remembered expiry. Session inspection, sign-in, first setup and stats/leave do not require a valid session; setup requires loopback and leave can remove only the supplied cookie/viewer lease. There is no Mac Control bearer-token API.
+- Maintain docs/API.md, docs/UI.md, the local OpenAPI, API/use-case manifest, dashboard-ui.json and both memory files together as behavior changes. packages/contracts/openapi.json is the separate Notifier API.
 
-Sources: [server.py](server.py), [auth.py](auth.py), [API guide](docs/API.md),
-[full OpenAPI](packages/contracts/mac-control.openapi.json),
-[API/use-case manifest](packages/contracts/mac-control-api.json).
+Sources: [server.py](server.py), [auth.py](auth.py), [docs/API.md](docs/API.md), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json), [docs/UI.md](docs/UI.md), [packages/contracts/dashboard-ui.json](packages/contracts/dashboard-ui.json).
 
 ## notifier-first-use-case — First API integration: Notifier copy progress
 
@@ -254,3 +240,17 @@ On mbp15, Mac Control is published privately at https://mbp15.tail19753.ts.net/m
 - Serve strips the mount; server HTML links/meta and browser fetches preserve the prefix externally. Publish with tailscale serve --bg --https=443 --set-path=/mc http://127.0.0.1:8765; remove only this route with tailscale serve --https=443 --set-path=/mc off. Python/config changes need only a dashboard restart.
 
 Sources: [tailscale_serve.py](tailscale_serve.py), [server.py](server.py), [web/app.js](web/app.js), [web/stats.js](web/stats.js), [web/index.html](web/index.html), [test_tailscale_serve.py](test_tailscale_serve.py), [test_web_interactions.py](test_web_interactions.py), [README.md](README.md), [docs/API.md](docs/API.md), [docs/REFERENCE.md](docs/REFERENCE.md), [docs/machines/mbp15.md](docs/machines/mbp15.md), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json).
+
+## dashboard-api-guide — Complete dashboard data/actions and in-app guide
+
+Kind: `project`. Last reviewed: `2026-11-04`.
+
+All dashboard hardware controls and presets have JSON action APIs; graphs and indicators expose read-only numeric data. A ? beside Connected locally opens the repository design/UI and API guides.
+
+- GET /api/fans and /api/graphics read helper/policy state without leasing telemetry. GET /api/stats/history returns existing two-minute samples without creating or renewing a viewer lease; live clients still use /api/stats?viewer=ID and stats/leave.
+- GET /api/power/samples?hours=1|12|24 returns unbucketed stored time/watts/connected/day/cumulative_wh readings under the monitor lock, preserving nulls and gaps. Detail retention is 24 hours; existing /api/power supplies chart histories and 90-day totals/coverage.
+- web/presets.json is the shared named-preset catalog. GET /api/presets reads it and POST /api/presets applies supported controls sequentially. Application can partially succeed; inspect applied/skipped/state/error and re-read after a helper/transport failure. The browser uses the same endpoint.
+- GET /api/docs returns docs/UI.md and docs/API.md as Markdown; web/guide.js renders text nodes, headings, tables, lists and code in a native modal. The ? has a hover title and stays visible on mobile. Live docs/contracts require the existing session/network checks and preserve the Tailscale prefix.
+- packages/contracts/dashboard-ui.json maps each element and graph to usage, fields, units and read/action APIs. Browser tabs, chart ranges/cursors, expansion and drafts remain local presentation state; clients build their own views. No write API alters historical observations or exposes private runtime files.
+
+Sources: [server.py](server.py), [metrics.py](metrics.py), [power.py](power.py), [web/app.js](web/app.js), [web/presets.json](web/presets.json), [web/index.html](web/index.html), [web/guide.js](web/guide.js), [web/guide.css](web/guide.css), [docs/UI.md](docs/UI.md), [docs/API.md](docs/API.md), [docs/REFERENCE.md](docs/REFERENCE.md), [packages/contracts/dashboard-ui.json](packages/contracts/dashboard-ui.json), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json), [test_dashboard_api.py](test_dashboard_api.py), [test_power.py](test_power.py), [test_visibility_fans.py](test_visibility_fans.py).

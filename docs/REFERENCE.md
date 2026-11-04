@@ -363,3 +363,30 @@ Secure with Path=/mc/ (the configured prefix plus slash). Local/LAN cookies
 retain Path=/. Failed logins through Serve share the proxy's loopback rate-limit
 bucket. Existing sessions are still validated by the same auth store.
 See the [mbp15 runbook](machines/mbp15.md) for publication and removal commands.
+
+
+## Dashboard API coverage and in-app documentation
+
+Documentation revision 1.5.0 describes 32 GET/POST operations. Fan and graphics
+status have direct GET endpoints. StatsMonitor.snapshot accepts no viewer for
+passive history without waking or leasing the sampler. PowerLog.raw_samples
+returns stored observations without chart buckets under the existing monitor
+lock; retention remains 24 hours of detail and 90 days of daily totals.
+Hardware/native measurements and private runtime contents are not writable.
+
+web/presets.json is the shared preset source; GET/POST /api/presets read/apply
+it. Applying a preset uses the existing hardware manager and skips unavailable
+capabilities. Application is sequential, stops on an error and can partially
+succeed; returned state/applied/skipped describe a handled 409. Runtime/transport
+failures require re-reading state. It does not change privileged helper APIs.
+
+The header ? has a title tooltip and opens a native modal. web/guide.js renders
+repository docs/UI.md and docs/API.md returned by authenticated GET /api/docs.
+The DOM renderer uses text nodes instead of innerHTML; repository-relative
+references are descriptive text, HTTP(S) links open with noopener/noreferrer.
+Native modal focus, Escape, close and backdrop dismissal are preserved; tables
+scroll within the modal. /api/ui serves dashboard-ui.json, and /api/openapi.json
+plus its bridge reference serve only explicitly allowed contract files, never
+arbitrary paths. All existing authentication, no-store and network checks apply.
+The HTML links and API calls preserve Tailscale Serve's configured prefix.
+Update both guides, local contracts, UI map and both memory companions together.
