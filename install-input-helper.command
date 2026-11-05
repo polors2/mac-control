@@ -22,6 +22,11 @@ print 'Enter your Mac login password locally below. Both inputs start enabled.'
 sudo /usr/bin/true
 sudo /bin/mkdir -p /Library/PrivilegedHelperTools
 sudo /bin/launchctl bootout system/local.maccontrol.inputs 2>/dev/null || true
+# bootout returns before launchd removes the job; an early bootstrap fails with "5: Input/output error".
+for _ in {1..300}; do /bin/launchctl print system/local.maccontrol.inputs >/dev/null 2>&1 || break; /bin/sleep 0.1; done
+if /bin/launchctl print system/local.maccontrol.inputs >/dev/null 2>&1; then
+    print -u2 'The previous input helper is still stopping. Run this installer again in a minute.'; exit 1
+fi
 sudo /usr/bin/ditto '.runtime/Mac Control Inputs.app' '/Library/PrivilegedHelperTools/Mac Control Inputs.app'
 sudo /usr/sbin/chown -R root:wheel '/Library/PrivilegedHelperTools/Mac Control Inputs.app'
 sudo /bin/chmod -R go-w '/Library/PrivilegedHelperTools/Mac Control Inputs.app'
