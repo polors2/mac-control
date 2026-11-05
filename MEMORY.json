@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "last_reviewed": "2026-11-04",
+  "last_reviewed": "2026-11-05",
   "human_readable_companion": "MEMORY.md",
   "entries": [
     {
@@ -320,6 +320,26 @@
         "test_visibility_fans.py"
       ],
       "last_reviewed": "2026-11-04"
+    },
+    {
+      "id": "helper-install-launchd-race",
+      "title": "Wait for bootout before bootstrapping helpers",
+      "kind": "operational",
+      "summary": "The fan, input and graphics helper installers must wait for launchd to remove the old job before bootstrapping the new one.",
+      "details": [
+        "launchctl bootout is asynchronous. On mbp15 (2026-11-05) the fan helper took about 0.8 s to exit, and an immediate bootstrap failed with \"Bootstrap failed: 5: Input/output error\" (launchd: \"37: Operation already in progress\"), leaving no helper loaded and fans in Apple Auto.",
+        "Each installer polls launchctl print system/<label> for up to 30 s after bootout and exits with a rerun message if the job remains. test_installer.py checks the bootout -> wait -> bootstrap order.",
+        "If the fan helper is not running when its installer starts, the installer restores the dashboard's saved selection (.runtime/fan-settings.json) instead of the hardware's Apple Auto state. The dashboard itself restores fan mode only during its own startup."
+      ],
+      "sources": [
+        "install-fan-helper.command",
+        "install-input-helper.command",
+        "install-graphics-helper.command",
+        "test_installer.py",
+        "docs/REFERENCE.md",
+        "persistence.py"
+      ],
+      "last_reviewed": "2026-11-05"
     }
   ]
 }

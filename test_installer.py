@@ -122,6 +122,17 @@ class InstallerPayloadTests(unittest.TestCase):
 
 
 class InstallerFlowTests(unittest.TestCase):
+    def test_helper_installers_wait_for_bootout_before_bootstrap(self):
+        # launchctl bootout is asynchronous; an immediate bootstrap fails with "5: Input/output error".
+        for name, label in (('fan', 'fans'), ('input', 'inputs'), ('graphics', 'graphics')):
+            with self.subTest(helper=name):
+                script = (installer.ROOT / f'install-{name}-helper.command').read_text()
+                bootout = script.index(f'launchctl bootout system/local.maccontrol.{label}')
+                wait = script.index(f'launchctl print system/local.maccontrol.{label}')
+                bootstrap = script.index(f'launchctl bootstrap system /Library/LaunchDaemons/local.maccontrol.{label}.plist')
+                self.assertLess(bootout, wait)
+                self.assertLess(wait, bootstrap)
+
     def test_installs_graphics_without_restarting_current_fan_or_input_helpers(self):
         with patch.object(installer, 'helper_current', side_effect=[True, True, False]), \
              patch.object(installer.FanController, 'status', return_value={'installed': True}), \

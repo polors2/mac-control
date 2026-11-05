@@ -24,15 +24,30 @@ PY
 import json, subprocess
 from pathlib import Path
 from fans import FanController
+from persistence import read_settings
 status = FanController().status(force=True)
 hardware = json.loads(subprocess.check_output(['.runtime/fans', 'status'], timeout=5))
-mode = status.get('controllerMode') if status.get('controllerMode') in ('target', 'constant') else hardware.get('fanMode', 'auto')
-Path('.runtime/fan-before-install.json').write_text(json.dumps({'mode': mode, 'temperature': status.get('targetTemperature'), 'speeds': status.get('constantTargets')}))
+saved = read_settings(Path('.runtime/fan-settings.json'))
+if status.get('installed'):
+    mode = status.get('controllerMode') if status.get('controllerMode') in ('target', 'constant') else hardware.get('fanMode', 'auto')
+    previous = {'mode': mode, 'temperature': status.get('targetTemperature'), 'speeds': status.get('constantTargets')}
+elif saved.get('mode') in ('auto', 'max', 'target', 'constant'):
+    # A stopped helper (e.g. after an interrupted update) leaves Apple Auto; keep the dashboard's saved choice.
+    previous = {'mode': saved['mode'], 'temperature': saved.get('temperature'), 'speeds': saved.get('speeds')}
+else:
+    previous = {'mode': hardware.get('fanMode', 'auto'), 'temperature': None, 'speeds': None}
+Path('.runtime/fan-before-install.json').write_text(json.dumps(previous))
 PYBEFORE
 print 'macOS requires administrator access to write fan settings. Enter your Mac login password below.'
 sudo /usr/bin/true
 sudo /bin/mkdir -p /Library/PrivilegedHelperTools
 sudo /bin/launchctl bootout system/local.maccontrol.fans 2>/dev/null || true
+# bootout returns while the old helper is still stopping; bootstrapping before launchd
+# removes it fails with "Bootstrap failed: 5: Input/output error". Wait up to 30 s.
+for _ in {1..300}; do /bin/launchctl print system/local.maccontrol.fans >/dev/null 2>&1 || break; /bin/sleep 0.1; done
+if /bin/launchctl print system/local.maccontrol.fans >/dev/null 2>&1; then
+    print -u2 'The previous fan helper is still stopping. Run this installer again in a minute.'; exit 1
+fi
 sudo /usr/bin/install -o root -g wheel -m 755 .runtime/fans /Library/PrivilegedHelperTools/local.maccontrol.fans
 sudo /usr/bin/install -o root -g wheel -m 644 .runtime/local.maccontrol.fans.plist /Library/LaunchDaemons/local.maccontrol.fans.plist
 sudo /bin/launchctl bootstrap system /Library/LaunchDaemons/local.maccontrol.fans.plist
