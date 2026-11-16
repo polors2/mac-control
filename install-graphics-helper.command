@@ -12,6 +12,11 @@ if [[ "$EUID" == 0 ]]; then
     /usr/bin/install -o root -g wheel -m 755 .runtime/graphics-helper /Library/PrivilegedHelperTools/local.maccontrol.graphics.new
     /usr/bin/install -o root -g wheel -m 644 .runtime/local.maccontrol.graphics.plist /Library/LaunchDaemons/local.maccontrol.graphics.plist
     /bin/launchctl bootout system/local.maccontrol.graphics 2>/dev/null || true
+    # bootout returns before launchd removes the job; an early bootstrap fails with "5: Input/output error".
+    for _ in {1..300}; do /bin/launchctl print system/local.maccontrol.graphics >/dev/null 2>&1 || break; /bin/sleep 0.1; done
+    if /bin/launchctl print system/local.maccontrol.graphics >/dev/null 2>&1; then
+        print -u2 'The previous graphics helper is still stopping. Run this installer again in a minute.'; exit 1
+    fi
     /bin/mv -f /Library/PrivilegedHelperTools/local.maccontrol.graphics.new /Library/PrivilegedHelperTools/local.maccontrol.graphics
     /bin/launchctl bootstrap system /Library/LaunchDaemons/local.maccontrol.graphics.plist
     exit

@@ -5,7 +5,7 @@ Provider-neutral project memory for humans and AI agents. Read this file and
 Both files describe the same durable knowledge. They are plain UTF-8 Markdown
 and JSON, with no provider-specific tooling or dependencies.
 
-Format version: `1`. Last reviewed: `2026-11-04`.
+Format version: `1`. Last reviewed: `2026-11-05`.
 
 ## How to maintain this memory
 
@@ -254,3 +254,15 @@ All dashboard hardware controls and presets have JSON action APIs; graphs and in
 - packages/contracts/dashboard-ui.json maps each element and graph to usage, fields, units and read/action APIs. Browser tabs, chart ranges/cursors, expansion and drafts remain local presentation state; clients build their own views. No write API alters historical observations or exposes private runtime files.
 
 Sources: [server.py](server.py), [metrics.py](metrics.py), [power.py](power.py), [web/app.js](web/app.js), [web/presets.json](web/presets.json), [web/index.html](web/index.html), [web/guide.js](web/guide.js), [web/guide.css](web/guide.css), [docs/UI.md](docs/UI.md), [docs/API.md](docs/API.md), [docs/REFERENCE.md](docs/REFERENCE.md), [packages/contracts/dashboard-ui.json](packages/contracts/dashboard-ui.json), [packages/contracts/mac-control.openapi.json](packages/contracts/mac-control.openapi.json), [packages/contracts/mac-control-api.json](packages/contracts/mac-control-api.json), [test_dashboard_api.py](test_dashboard_api.py), [test_power.py](test_power.py), [test_visibility_fans.py](test_visibility_fans.py).
+
+## helper-install-launchd-race — Wait for bootout before bootstrapping helpers
+
+Kind: `operational`. Last reviewed: `2026-11-05`.
+
+The fan, input and graphics helper installers must wait for launchd to remove the old job before bootstrapping the new one.
+
+- `launchctl bootout` is asynchronous. On mbp15 (2026-11-05) the fan helper took about 0.8 s to exit, and an immediate bootstrap failed with `Bootstrap failed: 5: Input/output error` (launchd: `37: Operation already in progress`), leaving no helper loaded and fans in Apple Auto.
+- Each installer polls `launchctl print system/<label>` for up to 30 s after bootout and exits with a rerun message if the job remains. test_installer.py checks the bootout → wait → bootstrap order.
+- If the fan helper is not running when its installer starts, the installer restores the dashboard's saved selection (.runtime/fan-settings.json) instead of the hardware's Apple Auto state. The dashboard itself restores fan mode only during its own startup.
+
+Sources: [install-fan-helper.command](install-fan-helper.command), [install-input-helper.command](install-input-helper.command), [install-graphics-helper.command](install-graphics-helper.command), [test_installer.py](test_installer.py), [docs/REFERENCE.md](docs/REFERENCE.md), [persistence.py](persistence.py).

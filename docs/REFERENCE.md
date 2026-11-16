@@ -274,7 +274,17 @@ Target mode works with helper version 2 and newer; predictive Target needs
 **version 4**. The dashboard identifies older Target as a legacy curve and offers
 the helper update. Constant mode still requires version 3. Run
 `install-fan-helper.command` on the host Mac to install version 4; it preserves
-the previously selected fan mode. This update does not restart the input helper.
+the previously selected fan mode. If the helper is not running when the installer
+starts (for example after an interrupted update), it restores the dashboard's saved
+selection in `.runtime/fan-settings.json` instead of the hardware's Apple Auto
+state. This update does not restart the input helper.
+
+`launchctl bootout` returns before launchd has removed the old job, so the fan,
+input and graphics installers wait (up to 30 seconds) until
+`launchctl print system/<label>` no longer finds it before `bootstrap`.
+Bootstrapping earlier fails with `Bootstrap failed: 5: Input/output error`
+(launchd logs `37: Operation already in progress`); if the wait expires, the
+installer stops with a message and can simply be run again.
 
 ### USB hard drives
 
